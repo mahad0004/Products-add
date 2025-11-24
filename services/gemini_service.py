@@ -86,19 +86,24 @@ class GeminiService:
             )
 
             # Extract edited image from response
-            for part in response.parts:
-                if part.inline_data is not None:
-                    # Get image data
-                    image_data = part.inline_data.data
-                    mime_type = part.inline_data.mime_type
+            # Access parts through response.candidates[0].content.parts
+            if response.candidates and len(response.candidates) > 0:
+                candidate = response.candidates[0]
+                if hasattr(candidate, 'content') and hasattr(candidate.content, 'parts'):
+                    for part in candidate.content.parts:
+                        if hasattr(part, 'inline_data') and part.inline_data is not None:
+                            # Get image data
+                            image_data = part.inline_data.data
+                            mime_type = part.inline_data.mime_type
 
-                    # Convert to base64 data URL
-                    data_url = f"data:{mime_type};base64,{base64.b64encode(image_data).decode('utf-8')}"
+                            # Convert to base64 data URL
+                            data_url = f"data:{mime_type};base64,{base64.b64encode(image_data).decode('utf-8')}"
 
-                    logger.info(f"✅ Nano Banana: Successfully edited image (variation: {variation})")
-                    return data_url
+                            logger.info(f"✅ Nano Banana: Successfully edited image (variation: {variation})")
+                            return data_url
 
             logger.error("No edited image data found in Nano Banana response")
+            logger.error(f"Response structure: {dir(response)}")
             return None
 
         except Exception as e:
@@ -156,19 +161,24 @@ class GeminiService:
             )
 
             # Extract generated image from response
-            for part in response.parts:
-                if part.inline_data is not None:
-                    # Get image data
-                    image_data = part.inline_data.data
-                    mime_type = part.inline_data.mime_type
+            # Access parts through response.candidates[0].content.parts
+            if response.candidates and len(response.candidates) > 0:
+                candidate = response.candidates[0]
+                if hasattr(candidate, 'content') and hasattr(candidate.content, 'parts'):
+                    for part in candidate.content.parts:
+                        if hasattr(part, 'inline_data') and part.inline_data is not None:
+                            # Get image data
+                            image_data = part.inline_data.data
+                            mime_type = part.inline_data.mime_type
 
-                    # Convert to base64 data URL
-                    data_url = f"data:{mime_type};base64,{base64.b64encode(image_data).decode('utf-8')}"
+                            # Convert to base64 data URL
+                            data_url = f"data:{mime_type};base64,{base64.b64encode(image_data).decode('utf-8')}"
 
-                    logger.info(f"✅ Nano Banana: Successfully generated image (variation: {variation})")
-                    return data_url
+                            logger.info(f"✅ Nano Banana: Successfully generated image (variation: {variation})")
+                            return data_url
 
             logger.error("No image data found in Nano Banana response")
+            logger.error(f"Response structure: {dir(response)}")
             return None
 
         except Exception as e:
