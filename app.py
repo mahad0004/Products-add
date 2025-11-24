@@ -1034,7 +1034,9 @@ def process_single_product(source_product, ai_job_id, fast_mode, created_counter
 
                     if edited_url_1:
                         ai_image_urls.append(edited_url_1)
+                        logger.info(f"[AI Job {ai_job_id}] ✅ Using AI-edited image 1/2")
                     else:
+                        logger.warning(f"[AI Job {ai_job_id}] ⚠️ Gemini editing failed for image 1/2 - falling back to original image")
                         ai_image_urls.append(first_image.original_url)
 
                     # Image 2: Edit to 45-degree angled view (rate-limited)
@@ -1050,7 +1052,9 @@ def process_single_product(source_product, ai_job_id, fast_mode, created_counter
 
                     if edited_url_2:
                         ai_image_urls.append(edited_url_2)
+                        logger.info(f"[AI Job {ai_job_id}] ✅ Using AI-edited image 2/2")
                     else:
+                        logger.warning(f"[AI Job {ai_job_id}] ⚠️ Gemini editing failed for image 2/2 - falling back to original image")
                         ai_image_urls.append(first_image.original_url)
 
                     image_prompt = f"Nano Banana edited variations of {source_product.title}"

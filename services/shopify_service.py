@@ -114,10 +114,12 @@ class ShopifyService:
             )
 
             if response.status_code in [200, 201]:
-                logger.info(f"Image added successfully to product {product_id}")
+                image_type = "base64 AI-generated" if image_url.startswith('data:image/') else "HTTP URL"
+                logger.info(f"✅ Image added successfully to product {product_id} ({image_type})")
                 return True
             else:
-                logger.error(f"Error adding image: {response.status_code} - {response.text}")
+                image_type = "base64" if image_url.startswith('data:image/') else "HTTP URL"
+                logger.error(f"❌ Error adding {image_type} image: {response.status_code} - {response.text}")
                 return False
 
         except Exception as e:

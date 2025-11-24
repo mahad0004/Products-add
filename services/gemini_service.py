@@ -102,9 +102,12 @@ class GeminiService:
             return None
 
         except Exception as e:
-            logger.error(f"Error editing image with Nano Banana: {str(e)}")
+            logger.error(f"❌ Error editing image with Nano Banana: {str(e)}")
+            logger.error(f"   Product: {product_title}")
+            logger.error(f"   Variation: {variation}")
+            logger.error(f"   Image URL: {original_image_url[:100]}...")
             import traceback
-            logger.error(traceback.format_exc())
+            logger.error(f"   Traceback: {traceback.format_exc()}")
             return None
 
     def generate_product_image(self, image_prompt, product_title, variation="main"):
