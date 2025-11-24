@@ -252,9 +252,24 @@ class ProductMapper:
                 # Use variant index to make unique title
                 variant['title'] = f'Variant {len(variants) + 1}'
 
-            # Ensure option1 exists - use title if no option1 yet
+            # CRITICAL FIX: Parse title into option values if no options were found
+            # This handles cases where Apify provides variant titles like "Yellow & Black / 3000mm"
+            # but doesn't provide structured option1, option2, option3 values
+            if 'option1' not in variant and variant.get('title'):
+                title_parts = variant['title'].split('/')
+                title_parts = [part.strip() for part in title_parts if part.strip()]
+
+                if title_parts:
+                    # Set option1, option2, option3 from parsed title parts
+                    for i, part in enumerate(title_parts[:3], 1):
+                        variant[f'option{i}'] = part
+                else:
+                    # Fallback: use full title as option1
+                    variant['option1'] = variant['title']
+
+            # Final fallback: ensure option1 exists
             if 'option1' not in variant:
-                variant['option1'] = variant['title']
+                variant['option1'] = 'Default'
 
             variants.append(variant)
 
