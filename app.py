@@ -1657,6 +1657,13 @@ def run_workflow(task_id, url, max_products):
                 # Map to Shopify format
                 shopify_product = product_mapper.map_to_shopify(product)
 
+                # DEBUG: Log what Apify returned and what mapper produced
+                logger.info(f"[{task_id}] DEBUG: Apify product has {len(product.get('variants', []))} variants")
+                logger.info(f"[{task_id}] DEBUG: Mapper produced {len(shopify_product.get('variants', []))} variants")
+                if shopify_product.get('variants'):
+                    for v_idx, v in enumerate(shopify_product['variants'][:3], 1):
+                        logger.info(f"[{task_id}] DEBUG:   Variant {v_idx}: title='{v.get('title')}', option1='{v.get('option1')}', price='{v.get('price')}'")
+
                 # Extract image URLs (use original images)
                 image_urls = image_processor.extract_image_urls(product)
 

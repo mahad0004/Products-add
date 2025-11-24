@@ -84,6 +84,7 @@ class DatabaseService:
 
             # Save variants
             variants_data = product_data.get('variants', [])
+            logger.info(f"DEBUG: Saving {len(variants_data)} variants for product '{product_data.get('title', 'Unknown')}'")
             for variant_data in variants_data:
                 # Extract price - handle both string and dict formats
                 price_data = variant_data.get('price', '0.00')
