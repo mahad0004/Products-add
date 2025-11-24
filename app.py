@@ -657,19 +657,20 @@ def create_ai_dupes():
                 db.session.add(ai_product)
                 db.session.flush()
 
-                # Copy ALL variants and DOUBLE all prices
+                # Copy ALL variants (prices already doubled in source products from adjust_prices)
                 for variant in source_product.variants:
-                    # Double the prices
-                    doubled_price = float(variant.price) * 2 if variant.price else 0
-                    doubled_compare_price = float(variant.compare_at_price) * 2 if variant.compare_at_price else None
+                    # Source products already have doubled prices from adjust_prices()
+                    # No need to double again - just copy the price as-is
+                    variant_price = float(variant.price) if variant.price else 0
+                    variant_compare_price = float(variant.compare_at_price) if variant.compare_at_price else None
 
                     ai_variant = AIProductVariant(
                         ai_product_id=ai_product.id,
                         title=variant.title,
                         sku=variant.sku,
                         barcode=variant.barcode,
-                        price=doubled_price,
-                        compare_at_price=doubled_compare_price,
+                        price=variant_price,
+                        compare_at_price=variant_compare_price,
                         option1=variant.option1,
                         option2=variant.option2,
                         option3=variant.option3,
@@ -1084,18 +1085,20 @@ def process_single_product(source_product, ai_job_id, fast_mode, created_counter
             db.session.add(ai_product)
             db.session.flush()
 
-            # Copy ALL variants and DOUBLE all prices
+            # Copy ALL variants (prices already doubled in source products from adjust_prices)
             for variant in source_product.variants:
-                doubled_price = float(variant.price) * 2 if variant.price else 0
-                doubled_compare_price = float(variant.compare_at_price) * 2 if variant.compare_at_price else None
+                # Source products already have doubled prices from adjust_prices()
+                # No need to double again - just copy the price as-is
+                variant_price = float(variant.price) if variant.price else 0
+                variant_compare_price = float(variant.compare_at_price) if variant.compare_at_price else None
 
                 ai_variant = AIProductVariant(
                     ai_product_id=ai_product.id,
                     title=variant.title,
                     sku=variant.sku,
                     barcode=variant.barcode,
-                    price=doubled_price,
-                    compare_at_price=doubled_compare_price,
+                    price=variant_price,
+                    compare_at_price=variant_compare_price,
                     option1=variant.option1,
                     option2=variant.option2,
                     option3=variant.option3,
