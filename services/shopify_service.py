@@ -14,6 +14,11 @@ class ShopifyService:
     """Service for interacting with Shopify Admin API"""
 
     def __init__(self, shop_url, access_token):
+        if not shop_url:
+            raise ValueError("SHOPIFY_SHOP_URL environment variable is required")
+        if not access_token:
+            raise ValueError("SHOPIFY_ACCESS_TOKEN environment variable is required")
+
         self.shop_url = shop_url.rstrip('/')
         self.access_token = access_token
         self.api_version = "2024-07"

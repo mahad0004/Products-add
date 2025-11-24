@@ -32,6 +32,40 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
+# ==================== ENVIRONMENT VARIABLES VALIDATION ====================
+# Check for required environment variables at startup
+REQUIRED_ENV_VARS = {
+    'SHOPIFY_SHOP_URL': 'Shopify store URL (e.g., https://your-store.myshopify.com)',
+    'SHOPIFY_ACCESS_TOKEN': 'Shopify Admin API access token',
+    'APIFY_API_TOKEN': 'Apify API token for product scraping',
+    'OPENAI_API_KEY': 'OpenAI API key for content enhancement',
+    'GOOGLE_API_KEY': 'Google Gemini API key for image editing'
+}
+
+missing_vars = []
+for var_name, var_description in REQUIRED_ENV_VARS.items():
+    if not os.getenv(var_name):
+        missing_vars.append(f"  - {var_name}: {var_description}")
+
+if missing_vars:
+    error_message = "\n" + "="*80 + "\n"
+    error_message += "❌ MISSING REQUIRED ENVIRONMENT VARIABLES\n"
+    error_message += "="*80 + "\n"
+    error_message += "The following environment variables are required but not set:\n\n"
+    error_message += "\n".join(missing_vars)
+    error_message += "\n\n"
+    error_message += "📝 To fix this:\n"
+    error_message += "1. Create a .env file in the project root\n"
+    error_message += "2. Copy .env.example to .env\n"
+    error_message += "3. Fill in all required values\n"
+    error_message += "\n"
+    error_message += "For Railway deployment:\n"
+    error_message += "- Set these variables in Railway dashboard under 'Variables' tab\n"
+    error_message += "- See .env.example for all required variables\n"
+    error_message += "="*80 + "\n"
+    logger.error(error_message)
+    raise EnvironmentError(error_message)
+
 # Initialize Flask app
 app = Flask(__name__)
 app.secret_key = os.getenv('SECRET_KEY', 'your-secret-key-change-this-in-production')
