@@ -82,8 +82,11 @@ Return JSON with these keys:
 
         try:
             if not self.client:
-                logger.warning("OpenAI API key not configured, returning original product")
+                logger.error("❌ OpenAI API key not configured - cannot enhance products!")
+                logger.error("   Set OPENAI_API_KEY in Railway environment variables")
                 return product
+
+            logger.info(f"🔄 OpenAI: Enhancing '{title[:50]}...'")
 
             response = self.client.chat.completions.create(
                 model="gpt-4o-mini",  # Use gpt-4o-mini (faster and cheaper) or gpt-4o
@@ -96,6 +99,7 @@ Return JSON with these keys:
             )
 
             content = response.choices[0].message.content.strip()
+            logger.info(f"✅ OpenAI: Got response ({len(content)} chars)")
 
             # Parse JSON response
             ai_data = self._parse_json_response(content)
@@ -103,14 +107,21 @@ Return JSON with these keys:
             if ai_data:
                 # Merge AI data with original product
                 enhanced = {**product, **ai_data}
-                logger.info(f"Product enhanced with AI content: {enhanced.get('title', 'Untitled')}")
+                logger.info(f"✅ OpenAI: Enhanced title: '{enhanced.get('title', 'Untitled')[:80]}...'")
+                logger.info(f"✅ OpenAI: Enhanced description: {len(enhanced.get('body_html', ''))} chars")
                 return enhanced
             else:
-                logger.warning("Failed to parse AI response, returning original product")
+                logger.error("❌ OpenAI: Failed to parse JSON response")
+                logger.error(f"   Response preview: {content[:200]}...")
+                logger.error("   Returning original product unchanged")
                 return product
 
         except Exception as e:
-            logger.error(f"Error calling OpenAI API: {str(e)}")
+            logger.error(f"❌ OpenAI API Error: {str(e)}")
+            logger.error(f"   Product: {title[:50]}")
+            import traceback
+            logger.error(f"   Traceback: {traceback.format_exc()}")
+            logger.error("   Returning original product unchanged")
             return product
 
     def _parse_json_response(self, content):
