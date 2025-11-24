@@ -664,6 +664,29 @@ def create_ai_dupes():
                     variant_price = float(variant.price) if variant.price else 0
                     variant_compare_price = float(variant.compare_at_price) if variant.compare_at_price else None
 
+                    # CRITICAL FIX: Parse variant title to extract option values
+                    # Many source products have option1='Default' because they were scraped before the fix
+                    # Parse title like "Galvanised / Bolt Down (flanged) excluding Bolts" into distinct options
+                    option1_value = variant.option1 if variant.option1 and variant.option1 != 'Default' else None
+                    option2_value = variant.option2
+                    option3_value = variant.option3
+
+                    # If no valid option1, parse from title
+                    if not option1_value and variant.title:
+                        title_parts = variant.title.split('/')
+                        title_parts = [part.strip() for part in title_parts if part.strip()]
+
+                        if len(title_parts) >= 1:
+                            option1_value = title_parts[0]
+                        if len(title_parts) >= 2:
+                            option2_value = title_parts[1]
+                        if len(title_parts) >= 3:
+                            option3_value = title_parts[2]
+
+                    # Final fallback
+                    if not option1_value:
+                        option1_value = variant.title if variant.title else 'Default'
+
                     ai_variant = AIProductVariant(
                         ai_product_id=ai_product.id,
                         title=variant.title,
@@ -671,9 +694,9 @@ def create_ai_dupes():
                         barcode=variant.barcode,
                         price=variant_price,
                         compare_at_price=variant_compare_price,
-                        option1=variant.option1,
-                        option2=variant.option2,
-                        option3=variant.option3,
+                        option1=option1_value,
+                        option2=option2_value,
+                        option3=option3_value,
                         requires_shipping=variant.requires_shipping,
                         taxable=variant.taxable
                     )
@@ -1092,6 +1115,29 @@ def process_single_product(source_product, ai_job_id, fast_mode, created_counter
                 variant_price = float(variant.price) if variant.price else 0
                 variant_compare_price = float(variant.compare_at_price) if variant.compare_at_price else None
 
+                # CRITICAL FIX: Parse variant title to extract option values
+                # Many source products have option1='Default' because they were scraped before the fix
+                # Parse title like "Galvanised / Bolt Down (flanged) excluding Bolts" into distinct options
+                option1_value = variant.option1 if variant.option1 and variant.option1 != 'Default' else None
+                option2_value = variant.option2
+                option3_value = variant.option3
+
+                # If no valid option1, parse from title
+                if not option1_value and variant.title:
+                    title_parts = variant.title.split('/')
+                    title_parts = [part.strip() for part in title_parts if part.strip()]
+
+                    if len(title_parts) >= 1:
+                        option1_value = title_parts[0]
+                    if len(title_parts) >= 2:
+                        option2_value = title_parts[1]
+                    if len(title_parts) >= 3:
+                        option3_value = title_parts[2]
+
+                # Final fallback
+                if not option1_value:
+                    option1_value = variant.title if variant.title else 'Default'
+
                 ai_variant = AIProductVariant(
                     ai_product_id=ai_product.id,
                     title=variant.title,
@@ -1099,9 +1145,9 @@ def process_single_product(source_product, ai_job_id, fast_mode, created_counter
                     barcode=variant.barcode,
                     price=variant_price,
                     compare_at_price=variant_compare_price,
-                    option1=variant.option1,
-                    option2=variant.option2,
-                    option3=variant.option3,
+                    option1=option1_value,
+                    option2=option2_value,
+                    option3=option3_value,
                     requires_shipping=variant.requires_shipping,
                     taxable=variant.taxable
                 )
