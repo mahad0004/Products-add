@@ -45,6 +45,17 @@ class ShopifyService:
         try:
             self._rate_limit_wait()
 
+            # DEBUG: Log the product data being sent
+            import json as json_module
+            logger.info(f"🛍️ DEBUG: Sending product to Shopify:")
+            logger.info(f"  Title: {product_data.get('title')}")
+            logger.info(f"  Variants: {len(product_data.get('variants', []))}")
+            logger.info(f"  Options: {product_data.get('options', [])}")
+            if product_data.get('variants'):
+                for idx, v in enumerate(product_data['variants'][:3], 1):
+                    logger.info(f"    Variant {idx}: option1={v.get('option1')}, option2={v.get('option2')}, option3={v.get('option3')}, price={v.get('price')}")
+            logger.info(f"  Full payload (first 1000 chars): {json_module.dumps({'product': product_data})[:1000]}")
+
             response = requests.post(
                 url,
                 json={"product": product_data},
@@ -66,6 +77,7 @@ class ShopifyService:
                 # Status 200 usually means the API call succeeded but didn't create a product
                 # This happens when Shopify returns existing products instead of creating new one
                 data = response.json()
+                logger.error(f"🛍️ DEBUG: Status 200 response from Shopify (FULL): {response.text[:2000]}")
                 if 'products' in data:
                     logger.error(f"❌ Product creation failed - Shopify returned existing products instead")
                     logger.error(f"   Attempted to create: {product_data.get('title', 'Unknown')}")
