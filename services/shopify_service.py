@@ -52,12 +52,21 @@ class ShopifyService:
                 timeout=30
             )
 
-            if response.status_code == 201:
+            if response.status_code in [200, 201]:
                 data = response.json()
-                logger.info(f"Product created successfully: {data['product']['id']}")
-                return data['product']
+                # Handle both success formats
+                if 'product' in data:
+                    logger.info(f"Product created successfully: {data['product']['id']}")
+                    return data['product']
+                elif 'products' in data and len(data['products']) > 0:
+                    # Shopify returned list format (shouldn't happen for create, but handle it)
+                    logger.info(f"Product created successfully: {data['products'][0]['id']}")
+                    return data['products'][0]
+                else:
+                    logger.error(f"Unexpected response format: {response.text[:500]}")
+                    return None
             else:
-                logger.error(f"Error creating product: {response.status_code} - {response.text}")
+                logger.error(f"Error creating product: {response.status_code} - {response.text[:500]}")
                 return None
 
         except Exception as e:
