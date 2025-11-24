@@ -105,14 +105,14 @@ with app.app_context():
         db.session.commit()
         logger.info(f"Marked {len(stuck_jobs)} jobs as 'stopped' - these can be resumed")
 
-# Initialize services
-apify_service = ApifyService(os.getenv('APIFY_API_TOKEN'))
+# Initialize services (strip whitespace from API keys to prevent header errors)
+apify_service = ApifyService(os.getenv('APIFY_API_TOKEN', '').strip())
 shopify_service = ShopifyService(
-    shop_url=os.getenv('SHOPIFY_SHOP_URL'),
-    access_token=os.getenv('SHOPIFY_ACCESS_TOKEN')
+    shop_url=os.getenv('SHOPIFY_SHOP_URL', '').strip(),
+    access_token=os.getenv('SHOPIFY_ACCESS_TOKEN', '').strip()
 )
-openai_service = OpenAIService(os.getenv('OPENAI_API_KEY'))
-gemini_service = GeminiService(os.getenv('GOOGLE_API_KEY'))
+openai_service = OpenAIService(os.getenv('OPENAI_API_KEY', '').strip())
+gemini_service = GeminiService(os.getenv('GOOGLE_API_KEY', '').strip())
 product_mapper = ProductMapper()
 image_processor = ImageProcessor()
 db_service = DatabaseService()
