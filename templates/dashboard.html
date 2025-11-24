@@ -1,0 +1,335 @@
+{% extends "base.html" %}
+
+{% block title %}Dashboard - Shopify Automation{% endblock %}
+
+{% block content %}
+<h1 style="color: #ff00ff; font-size: 36px; margin-bottom: 30px;">📊 Dashboard</h1>
+
+<div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 20px; margin-bottom: 30px;">
+    <div class="card" style="text-align: center;">
+        <div style="font-size: 48px; color: #00ffff; margin-bottom: 10px;" id="totalJobs">0</div>
+        <div style="font-size: 16px; color: #888;">Total Scrape Jobs</div>
+    </div>
+
+    <div class="card" style="text-align: center;">
+        <div style="font-size: 48px; color: #00ffff; margin-bottom: 10px;" id="totalProducts">0</div>
+        <div style="font-size: 16px; color: #888;">Total Products</div>
+    </div>
+
+    <div class="card" style="text-align: center;">
+        <div style="font-size: 48px; color: #ffc800; margin-bottom: 10px;" id="totalAIJobs">0</div>
+        <div style="font-size: 16px; color: #888;">AI Dupe Jobs</div>
+    </div>
+
+    <div class="card" style="text-align: center;">
+        <div style="font-size: 48px; color: #00ff88; margin-bottom: 10px;" id="aiProductsCreated">0</div>
+        <div style="font-size: 16px; color: #888;">AI Products Created</div>
+    </div>
+
+    <div class="card" style="text-align: center;">
+        <div style="font-size: 48px; color: #00c8ff; margin-bottom: 10px;" id="pushedProducts">0</div>
+        <div style="font-size: 16px; color: #888;">Pushed to Shopify</div>
+    </div>
+</div>
+
+<div class="card">
+    <!-- Tabs -->
+    <div style="display: flex; border-bottom: 2px solid rgba(0,255,255,0.2); margin-bottom: 20px;">
+        <button id="scrapeJobsTab" class="tab-button active" onclick="switchTab('scrapeJobs')"
+                style="flex: 1; padding: 15px; background: none; border: none; color: #00ffff; font-size: 16px; cursor: pointer; border-bottom: 3px solid #00ffff;">
+            📦 Recent Scrape Jobs
+        </button>
+        <button id="aiDupesTab" class="tab-button" onclick="switchTab('aiDupes')"
+                style="flex: 1; padding: 15px; background: none; border: none; color: #888; font-size: 16px; cursor: pointer; border-bottom: 3px solid transparent;">
+            🤖 AI Dupes Jobs
+        </button>
+    </div>
+
+    <!-- Scrape Jobs Tab Content -->
+    <div id="scrapeJobsContent">
+        <h2 class="card-title">Recent Scrape Jobs</h2>
+        <div id="jobsLoader" class="loader"></div>
+        <div id="jobsContainer" style="display: none;">
+            <table id="jobsTable">
+                <thead>
+                    <tr>
+                        <th>Task ID</th>
+                        <th>Source URL</th>
+                        <th>Status</th>
+                        <th>Products</th>
+                        <th>Pushed</th>
+                        <th>Created</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody></tbody>
+            </table>
+        </div>
+        <div id="jobsEmpty" style="display: none; text-align: center; padding: 40px; color: #888;">
+            No jobs yet. <a href="/scrape" style="color: #00ffff;">Start scraping</a>
+        </div>
+    </div>
+
+    <!-- AI Dupes Tab Content -->
+    <div id="aiDupesContent" style="display: none;">
+        <h2 class="card-title">AI Dupes Jobs</h2>
+        <div id="aiJobsLoader" class="loader"></div>
+        <div id="aiJobsContainer" style="display: none;">
+            <table id="aiJobsTable">
+                <thead>
+                    <tr>
+                        <th>Job ID</th>
+                        <th>Source Job</th>
+                        <th>Status</th>
+                        <th>AI Products</th>
+                        <th>Pushed</th>
+                        <th>Created</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody></tbody>
+            </table>
+        </div>
+        <div id="aiJobsEmpty" style="display: none; text-align: center; padding: 40px; color: #888;">
+            No AI Dupe jobs yet. Create one from a scrape job!
+        </div>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    let currentTab = 'scrapeJobs';
+
+    function switchTab(tab) {
+        currentTab = tab;
+
+        // Update tab buttons
+        document.querySelectorAll('.tab-button').forEach(btn => {
+            btn.style.color = '#888';
+            btn.style.borderBottom = '3px solid transparent';
+        });
+
+        if (tab === 'scrapeJobs') {
+            document.getElementById('scrapeJobsTab').style.color = '#00ffff';
+            document.getElementById('scrapeJobsTab').style.borderBottom = '3px solid #00ffff';
+            document.getElementById('scrapeJobsContent').style.display = 'block';
+            document.getElementById('aiDupesContent').style.display = 'none';
+        } else {
+            document.getElementById('aiDupesTab').style.color = '#ff00ff';
+            document.getElementById('aiDupesTab').style.borderBottom = '3px solid #ff00ff';
+            document.getElementById('scrapeJobsContent').style.display = 'none';
+            document.getElementById('aiDupesContent').style.display = 'block';
+            loadAIJobs();
+        }
+    }
+
+    async function loadStats() {
+        try {
+            const response = await fetch('/api/stats');
+            const stats = await response.json();
+
+            document.getElementById('totalJobs').textContent = stats.total_jobs || 0;
+            document.getElementById('totalProducts').textContent = stats.total_products || 0;
+            document.getElementById('totalAIJobs').textContent = stats.total_ai_jobs || 0;
+            document.getElementById('aiProductsCreated').textContent = stats.ai_products_created || 0;
+            document.getElementById('pushedProducts').textContent = stats.pushed_products || 0;
+        } catch (error) {
+            console.error('Error loading stats:', error);
+        }
+    }
+
+    async function loadJobs() {
+        try {
+            const response = await fetch('/api/jobs');
+            const data = await response.json();
+
+            document.getElementById('jobsLoader').style.display = 'none';
+
+            if (!data.jobs || data.jobs.length === 0) {
+                document.getElementById('jobsEmpty').style.display = 'block';
+                return;
+            }
+
+            document.getElementById('jobsContainer').style.display = 'block';
+
+            const tbody = document.querySelector('#jobsTable tbody');
+            tbody.innerHTML = '';
+
+            data.jobs.forEach(job => {
+                const row = tbody.insertRow();
+
+                row.innerHTML = `
+                    <td><code>${job.task_id}</code></td>
+                    <td style="max-width: 300px; overflow: hidden; text-overflow: ellipsis;">${job.source_url}</td>
+                    <td><span class="badge badge-${job.status}">${job.status}</span></td>
+                    <td>${job.total_products} / ${job.products_processed}</td>
+                    <td>${job.products_pushed || 0}</td>
+                    <td>${formatDate(job.created_at)}</td>
+                    <td>
+                        <button class="btn btn-secondary" onclick="viewProducts(${job.id})" style="padding: 5px 10px; font-size: 12px; margin-right: 5px;">
+                            View Products
+                        </button>
+                        <button class="btn" onclick="createAIDupeJob(${job.id}, true)" style="padding: 5px 10px; font-size: 12px; background: #00c8ff; margin-right: 5px;">
+                            ⚡ Fast Mode
+                        </button>
+                        <button class="btn btn-primary" onclick="createAIDupeJob(${job.id}, false)" style="padding: 5px 10px; font-size: 12px; background: #ff00ff;">
+                            🎨 Pro Mode
+                        </button>
+                    </td>
+                `;
+            });
+        } catch (error) {
+            console.error('Error loading jobs:', error);
+            document.getElementById('jobsLoader').style.display = 'none';
+            showAlert('Error loading jobs: ' + error.message, 'error');
+        }
+    }
+
+    async function loadAIJobs() {
+        try {
+            const response = await fetch('/api/ai-jobs');
+            const data = await response.json();
+
+            document.getElementById('aiJobsLoader').style.display = 'none';
+
+            if (!data.ai_jobs || data.ai_jobs.length === 0) {
+                document.getElementById('aiJobsEmpty').style.display = 'block';
+                return;
+            }
+
+            document.getElementById('aiJobsContainer').style.display = 'block';
+
+            const tbody = document.querySelector('#aiJobsTable tbody');
+            tbody.innerHTML = '';
+
+            data.ai_jobs.forEach(aiJob => {
+                const row = tbody.insertRow();
+
+                const statusBadge = aiJob.status === 'completed' ? 'approved' :
+                                   aiJob.status === 'running' ? 'pending' :
+                                   aiJob.status === 'stopped' ? 'failed' :
+                                   aiJob.status === 'error' ? 'failed' : aiJob.status;
+
+                // Show Resume button for stopped/error jobs
+                let actionButtons = '';
+                if (aiJob.status === 'stopped' || aiJob.status === 'error') {
+                    actionButtons = `
+                        <button class="btn" onclick="resumeAIJob(${aiJob.id})" style="padding: 5px 10px; font-size: 12px; background: #ff8800; margin-right: 5px;">
+                            ▶️ Resume
+                        </button>
+                        <button class="btn btn-secondary" onclick="viewAIJob(${aiJob.id})" style="padding: 5px 10px; font-size: 12px;">
+                            👁️ View
+                        </button>
+                    `;
+                } else if (aiJob.status === 'completed' || aiJob.status === 'running') {
+                    actionButtons = `
+                        <button class="btn btn-primary" onclick="viewAIJob(${aiJob.id})" style="padding: 5px 10px; font-size: 12px;">
+                            🚀 View & Push
+                        </button>
+                    `;
+                } else {
+                    actionButtons = `
+                        <button class="btn btn-secondary" onclick="viewAIJob(${aiJob.id})" style="padding: 5px 10px; font-size: 12px;">
+                            👁️ View
+                        </button>
+                    `;
+                }
+
+                row.innerHTML = `
+                    <td><code>ai_${aiJob.id}</code></td>
+                    <td><code>${aiJob.source_job_task_id || 'N/A'}</code></td>
+                    <td><span class="badge badge-${statusBadge}">${aiJob.status}</span></td>
+                    <td>${aiJob.ai_products_created || 0}</td>
+                    <td>${aiJob.products_pushed || 0}</td>
+                    <td>${formatDate(aiJob.created_at)}</td>
+                    <td>${actionButtons}</td>
+                `;
+            });
+        } catch (error) {
+            console.error('Error loading AI jobs:', error);
+            document.getElementById('aiJobsLoader').style.display = 'none';
+        }
+    }
+
+    async function createAIDupeJob(jobId, fastMode) {
+        const mode = fastMode ? 'FAST MODE (1 image, no AI edits)' : 'PRO MODE (2 AI-edited images with Nano Banana)';
+        if (!confirm(`This will create AI-enhanced versions for ALL products using ${mode}. Continue?`)) {
+            return;
+        }
+
+        try {
+            const response = await fetch('/api/create-ai-job', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    job_id: jobId,
+                    fast_mode: fastMode
+                })
+            });
+
+            const data = await response.json();
+
+            if (response.ok) {
+                showAlert(data.message, 'success');
+                // Switch to AI Dupes tab
+                switchTab('aiDupes');
+                // Reload stats
+                loadStats();
+            } else {
+                showAlert(data.error, 'error');
+            }
+        } catch (error) {
+            showAlert('Error: ' + error.message, 'error');
+        }
+    }
+
+    function viewProducts(jobId) {
+        window.location.href = `/products?job_id=${jobId}`;
+    }
+
+    function viewAIJob(aiJobId) {
+        window.location.href = `/ai-job/${aiJobId}`;
+    }
+
+    async function resumeAIJob(aiJobId) {
+        if (!confirm('This will resume the AI job from where it stopped. Continue?')) {
+            return;
+        }
+
+        try {
+            const response = await fetch(`/api/resume-ai-job/${aiJobId}`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' }
+            });
+
+            const data = await response.json();
+
+            if (response.ok) {
+                showAlert(`Job resumed: ${data.already_processed} already processed, ${data.remaining} remaining (${data.mode})`, 'success');
+                // Reload AI jobs to show updated status
+                loadAIJobs();
+                loadStats();
+            } else {
+                showAlert(data.error, 'error');
+            }
+        } catch (error) {
+            showAlert('Error: ' + error.message, 'error');
+        }
+    }
+
+    // Load data on page load
+    loadStats();
+    loadJobs();
+
+    // Refresh every 10 seconds
+    setInterval(() => {
+        loadStats();
+        loadJobs();
+        if (currentTab === 'aiDupes') {
+            loadAIJobs();
+        }
+    }, 10000);
+</script>
+{% endblock %}

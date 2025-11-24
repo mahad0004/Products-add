@@ -1,0 +1,88 @@
+# Environment
+.env
+.env.local
+.env.production
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+venv/
+env/
+ENV/
+*.egg-info/
+dist/
+build/
+
+# Logs
+*.log
+logs/
+temp/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Temporary files
+temp_*
+*.tmp
+ai_review_*.jpg
+
+# Playwright
+.playwright/
+playwright-state.json
+
+# Flask
+instance/
+.webassets-cache
+
+# Credentials & Secrets
+credentials/
+*.json
+!package.json
+!tsconfig.json
+!railway.json
+
+# Database files
+*.db
+*.db-journal
+*.sqlite
+*.sqlite3
+
+# Test files
+test_*.py
+*_test.py
+monitor_*.py
+check_*.py
+verify_*.py
+delete_*.py
+direct_db_*.py
+push_5_*.py
+retry_*.py
+remove_*.py
+create_test_*.py
+
+# Backup and old files
+*_old.py
+*_backup.py
+app_old.py
+
+# Documentation (keep important ones, ignore detailed logs)
+CHANGES.md
+FIX_SUMMARY.md
+IMPLEMENTATION_COMPLETE.md
+IMAGE_GENERATION_UPGRADE.md
+SPEED_OPTIMIZATION.md
+UK_CURRENCY_AND_VARIANTS_FIX.md
+VARIANT_*.md
+NEW_WORKFLOW.md
+PROMPT_UPDATES.md
+README_old.md

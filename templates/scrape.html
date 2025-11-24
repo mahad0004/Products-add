@@ -1,0 +1,136 @@
+{% extends "base.html" %}
+
+{% block title %}Scrape - Shopify Automation{% endblock %}
+
+{% block content %}
+<h1 style="color: #ff00ff; font-size: 36px; margin-bottom: 30px;">📥 Get Products from Apify</h1>
+
+<div class="alert alert-info" style="max-width: 800px; margin: 0 auto 20px auto;">
+    <strong>📌 TWO-STEP PROCESS:</strong><br>
+    <strong>STEP 1:</strong> Get products from Apify's last run and save to database<br>
+    <strong>STEP 2:</strong> Review products and push selected ones to Shopify
+</div>
+
+<div class="card" style="max-width: 800px; margin: 0 auto;">
+    <h2 class="card-title">STEP 1: Fetch Products from Apify Last Run</h2>
+
+    <form id="scrapeForm">
+        <div class="form-group">
+            <label for="shopifyUrl">Source URL (for reference only)</label>
+            <input
+                type="text"
+                id="shopifyUrl"
+                name="url"
+                placeholder="https://example.myshopify.com"
+                required
+            >
+            <small style="color: #888; font-size: 12px;">This is saved for reference - system will fetch from Apify's last run</small>
+        </div>
+
+        <div class="form-group">
+            <label for="maxProducts">Max Products to Fetch</label>
+            <input
+                type="number"
+                id="maxProducts"
+                name="max_products"
+                placeholder="200"
+                min="1"
+                value="200"
+            >
+            <small style="color: #888; font-size: 12px;">Maximum products to fetch from last run</small>
+        </div>
+
+        <button type="submit" class="btn btn-primary" id="submitBtn" style="width: 100%; padding: 15px; font-size: 16px;">
+            📥 Fetch Products from Last Run
+        </button>
+    </form>
+
+    <div id="loader" class="loader" style="display: none;"></div>
+
+    <div id="status" style="display: none; margin-top: 20px;"></div>
+</div>
+
+<div class="card" style="max-width: 800px; margin: 30px auto;">
+    <h3 class="card-title">ℹ️ How It Works</h3>
+    <ol style="line-height: 2.2; color: #aaa;">
+        <li><strong>No new scraping</strong> - Fetches from Apify's last run (saves credits!)</li>
+        <li><strong>No AI enhancement</strong> - Skips OpenAI & Gemini (saves credits!)</li>
+        <li>All products saved to database with original images</li>
+        <li>You review and select products in the <strong>Products</strong> page</li>
+        <li>When pushing to Shopify, product names get <strong>"(AI-GENERATED)"</strong> suffix</li>
+        <li>Track which products are added with ✅/❌ indicators</li>
+    </ol>
+</div>
+
+<div class="card" style="max-width: 800px; margin: 0 auto; background: rgba(255, 200, 0, 0.1); border-color: #ffc800;">
+    <h3 style="color: #ffc800; margin-bottom: 15px;">⚠️ Important Notes</h3>
+    <ul style="line-height: 2; color: #ffc800;">
+        <li><strong>Uses Apify Last Run:</strong> Make sure you have a recent successful run</li>
+        <li><strong>Saves Credits:</strong> No OpenAI, no Gemini, no new Apify scrape</li>
+        <li><strong>Two-Step Process:</strong> Fetch first, then push from Products page</li>
+        <li><strong>Random Images:</strong> Uses original images or placeholders if missing</li>
+    </ul>
+</div>
+
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    document.getElementById('scrapeForm').addEventListener('submit', async (e) => {
+        e.preventDefault();
+
+        const submitBtn = document.getElementById('submitBtn');
+        const loader = document.getElementById('loader');
+        const status = document.getElementById('status');
+        const url = document.getElementById('shopifyUrl').value;
+        const maxProducts = document.getElementById('maxProducts').value || 200;
+
+        submitBtn.disabled = true;
+        loader.style.display = 'block';
+        status.style.display = 'none';
+
+        try {
+            const response = await fetch('/api/scrape', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    url,
+                    max_products: parseInt(maxProducts)
+                })
+            });
+
+            const data = await response.json();
+
+            loader.style.display = 'none';
+            status.style.display = 'block';
+
+            if (response.ok) {
+                status.className = 'alert alert-success';
+                status.innerHTML = `
+                    <strong>✓ Success!</strong><br>
+                    ${data.message}<br>
+                    <strong>Task ID:</strong> ${data.task_id}<br>
+                    <strong>Job ID:</strong> ${data.job_id}<br><br>
+                    <a href="/" class="btn btn-secondary">View Dashboard</a>
+                    <a href="/products?job_id=${data.job_id}" class="btn btn-primary" style="margin-left: 10px;">View Products</a>
+                `;
+
+                // Clear form
+                document.getElementById('scrapeForm').reset();
+            } else {
+                status.className = 'alert alert-error';
+                status.innerHTML = `<strong>✗ Error!</strong><br>${data.error || 'Unknown error occurred'}`;
+            }
+        } catch (error) {
+            loader.style.display = 'none';
+            status.style.display = 'block';
+            status.className = 'alert alert-error';
+            status.innerHTML = `<strong>✗ Error!</strong><br>${error.message}`;
+        } finally {
+            submitBtn.disabled = false;
+        }
+    });
+</script>
+{% endblock %}
