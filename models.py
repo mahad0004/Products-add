@@ -155,6 +155,37 @@ class Product(db.Model):
                 'fulfillment_service': 'manual'
             }]
 
+        # Build options array from variants (REQUIRED by Shopify)
+        # Shopify requires options to match the option1/option2/option3 values in variants
+        options = []
+
+        # Collect all unique option values
+        option1_values = set()
+        option2_values = set()
+        option3_values = set()
+
+        for variant in unique_variants:
+            if variant.get('option1'):
+                option1_values.add(variant['option1'])
+            if variant.get('option2'):
+                option2_values.add(variant['option2'])
+            if variant.get('option3'):
+                option3_values.add(variant['option3'])
+
+        # Build options array
+        if option1_values:
+            options.append({'name': 'Option 1'})
+        if option2_values:
+            options.append({'name': 'Option 2'})
+        if option3_values:
+            options.append({'name': 'Option 3'})
+
+        # If no options, use default Title option
+        if not options:
+            options = [{'name': 'Title'}]
+
+        logger.info(f"✅ Built {len(options)} option(s) for Shopify")
+
         shopify_product = {
             'title': self.title,
             'handle': self.handle,
@@ -164,6 +195,7 @@ class Product(db.Model):
             'vendor': self.vendor,
             'status': 'active',
             'variants': unique_variants,
+            'options': options,
         }
 
         # Add metafields if any
@@ -413,6 +445,37 @@ class AIProduct(db.Model):
                 'fulfillment_service': 'manual'
             }]
 
+        # Build options array from variants (REQUIRED by Shopify)
+        # Shopify requires options to match the option1/option2/option3 values in variants
+        options = []
+
+        # Collect all unique option values
+        option1_values = set()
+        option2_values = set()
+        option3_values = set()
+
+        for variant in unique_variants:
+            if variant.get('option1'):
+                option1_values.add(variant['option1'])
+            if variant.get('option2'):
+                option2_values.add(variant['option2'])
+            if variant.get('option3'):
+                option3_values.add(variant['option3'])
+
+        # Build options array
+        if option1_values:
+            options.append({'name': 'Option 1'})
+        if option2_values:
+            options.append({'name': 'Option 2'})
+        if option3_values:
+            options.append({'name': 'Option 3'})
+
+        # If no options, use default Title option
+        if not options:
+            options = [{'name': 'Title'}]
+
+        logger.info(f"✅ Built {len(options)} option(s) for Shopify")
+
         shopify_product = {
             'title': self.title,
             'handle': self.handle,
@@ -422,6 +485,7 @@ class AIProduct(db.Model):
             'vendor': self.vendor,
             'status': 'active',
             'variants': unique_variants,
+            'options': options,
         }
 
         return shopify_product
