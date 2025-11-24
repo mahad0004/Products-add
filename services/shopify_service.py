@@ -52,21 +52,33 @@ class ShopifyService:
                 timeout=30
             )
 
-            if response.status_code in [200, 201]:
+            if response.status_code == 201:
+                # Status 201 = Product successfully created
                 data = response.json()
-                # Handle both success formats
                 if 'product' in data:
-                    logger.info(f"Product created successfully: {data['product']['id']}")
+                    logger.info(f"✅ Product created successfully: {data['product']['id']}")
                     return data['product']
-                elif 'products' in data and len(data['products']) > 0:
-                    # Shopify returned list format (shouldn't happen for create, but handle it)
-                    logger.info(f"Product created successfully: {data['products'][0]['id']}")
-                    return data['products'][0]
                 else:
-                    logger.error(f"Unexpected response format: {response.text[:500]}")
+                    logger.error(f"❌ Status 201 but unexpected response format: {response.text[:500]}")
                     return None
+
+            elif response.status_code == 200:
+                # Status 200 usually means the API call succeeded but didn't create a product
+                # This happens when Shopify returns existing products instead of creating new one
+                data = response.json()
+                if 'products' in data:
+                    logger.error(f"❌ Product creation failed - Shopify returned existing products instead")
+                    logger.error(f"   Attempted to create: {product_data.get('title', 'Unknown')}")
+                    logger.error(f"   Shopify returned: {data['products'][0].get('title', 'Unknown') if data['products'] else 'No products'}")
+                    logger.error(f"   This usually means validation failed or duplicate detected")
+                    return None
+                else:
+                    logger.error(f"❌ Status 200 with unexpected format: {response.text[:500]}")
+                    return None
+
             else:
-                logger.error(f"Error creating product: {response.status_code} - {response.text[:500]}")
+                logger.error(f"❌ Error creating product: {response.status_code}")
+                logger.error(f"   Response: {response.text[:500]}")
                 return None
 
         except Exception as e:
