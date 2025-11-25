@@ -1042,19 +1042,19 @@ def process_single_product(source_product, ai_job_id, fast_mode, created_counter
                     ]
                 image_prompt = f"Product: {source_product.title}"
             else:
-                # 🎨 PRO MODE: Edit images with Gemini Pro (rate-limited)
+                # 🍌 PRO MODE: Edit images with Nano Banana (rate-limited)
                 first_image = source_product.images.first()
                 if first_image and first_image.original_url:
                     # Image 1: Edit to main front view (rate-limited)
                     with gemini_rate_limiter:
-                        logger.info(f"[AI Job {ai_job_id}] 🎨 Gemini Pro: Editing image 1/2 (Main front view)...")
+                        logger.info(f"[AI Job {ai_job_id}] 🍌 Nano Banana: Editing image 1/2 (Main front view)...")
                         edited_url_1 = gemini_service.edit_product_image(
                             first_image.original_url,
                             source_product.title,
                             variation="main"
                         )
                         time.sleep(GEMINI_DELAY)  # Delay after Gemini call
-                        logger.info(f"[AI Job {ai_job_id}] ✅ Gemini Pro: Image 1/2 edited")
+                        logger.info(f"[AI Job {ai_job_id}] ✅ Nano Banana: Image 1/2 edited")
 
                     if edited_url_1:
                         ai_image_urls.append(edited_url_1)
@@ -1065,14 +1065,14 @@ def process_single_product(source_product, ai_job_id, fast_mode, created_counter
 
                     # Image 2: Edit to top-down angled view (rate-limited)
                     with gemini_rate_limiter:
-                        logger.info(f"[AI Job {ai_job_id}] 🎨 Gemini Pro: Editing image 2/2 (Top-down angled view)...")
+                        logger.info(f"[AI Job {ai_job_id}] 🍌 Nano Banana: Editing image 2/2 (Top-down angled view)...")
                         edited_url_2 = gemini_service.edit_product_image(
                             first_image.original_url,
                             source_product.title,
                             variation="angle1"
                         )
                         time.sleep(GEMINI_DELAY)  # Delay after Gemini call
-                        logger.info(f"[AI Job {ai_job_id}] ✅ Gemini Pro: Image 2/2 edited")
+                        logger.info(f"[AI Job {ai_job_id}] ✅ Nano Banana: Image 2/2 edited")
 
                     if edited_url_2:
                         ai_image_urls.append(edited_url_2)
