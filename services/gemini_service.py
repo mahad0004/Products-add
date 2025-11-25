@@ -21,14 +21,14 @@ class GeminiService:
         self.api_key = api_key
         if api_key:
             self.client = genai.Client(api_key=api_key)
-            logger.info("✅ Initialized Gemini Client with Nano Banana (gemini-2.5-flash-image)")
+            logger.info("✅ Initialized Gemini Client with gemini-2.5-pro (Premium Quality)")
         else:
             self.client = None
             logger.warning("No Gemini API key provided")
 
     def edit_product_image(self, original_image_url, product_title, variation="main"):
         """
-        Edit an existing product image using Nano Banana (Gemini 2.5 Flash Image)
+        Edit an existing product image using Gemini 2.5 Pro (Premium Quality)
         This uses Gemini's image editing capabilities to create variations
 
         Args:
@@ -44,7 +44,7 @@ class GeminiService:
                 logger.warning("Gemini client not configured")
                 return None
 
-            logger.info(f"🍌 Nano Banana: Editing product image for: {product_title} (variation: {variation})")
+            logger.info(f"🎨 Gemini Pro: Editing product image for: {product_title} (variation: {variation})")
 
             # Download original image
             response = requests.get(original_image_url, timeout=10)
@@ -77,11 +77,11 @@ class GeminiService:
 5. High resolution, ultra-sharp focus
 6. Clean, professional background"""
 
-            logger.info(f"Nano Banana edit prompt: {edit_prompt[:120]}...")
+            logger.info(f"Gemini Pro edit prompt: {edit_prompt[:120]}...")
 
-            # Use Nano Banana to edit the image
+            # Use Gemini 2.5 Pro to edit the image (Premium Quality)
             response = self.client.models.generate_content(
-                model="gemini-2.5-flash-image",
+                model="gemini-2.5-pro",
                 contents=[edit_prompt, image],
             )
 
@@ -99,15 +99,15 @@ class GeminiService:
                             # Convert to base64 data URL
                             data_url = f"data:{mime_type};base64,{base64.b64encode(image_data).decode('utf-8')}"
 
-                            logger.info(f"✅ Nano Banana: Successfully edited image (variation: {variation})")
+                            logger.info(f"✅ Gemini Pro: Successfully edited image (variation: {variation})")
                             return data_url
 
-            logger.error("No edited image data found in Nano Banana response")
+            logger.error("No edited image data found in Gemini Pro response")
             logger.error(f"Response structure: {dir(response)}")
             return None
 
         except Exception as e:
-            logger.error(f"❌ Error editing image with Nano Banana: {str(e)}")
+            logger.error(f"❌ Error editing image with Gemini Pro: {str(e)}")
             logger.error(f"   Product: {product_title}")
             logger.error(f"   Variation: {variation}")
             logger.error(f"   Image URL: {original_image_url[:100]}...")
@@ -117,7 +117,7 @@ class GeminiService:
 
     def generate_product_image(self, image_prompt, product_title, variation="main"):
         """
-        Generate a product image using Nano Banana (Gemini 2.5 Flash Image)
+        Generate a product image using Gemini 2.5 Pro (Premium Quality)
 
         Args:
             image_prompt: The prompt for image generation
@@ -132,7 +132,7 @@ class GeminiService:
                 logger.warning("Gemini client not configured")
                 return None
 
-            logger.info(f"🍌 Nano Banana: Generating image for: {product_title} (variation: {variation})")
+            logger.info(f"🎨 Gemini Pro: Generating image for: {product_title} (variation: {variation})")
             logger.info(f"Base prompt: {image_prompt[:150]}...")
 
             # Create variation-specific modifications
@@ -154,9 +154,9 @@ class GeminiService:
 8. The image must be completely text-free and professional e-commerce quality.
 9. Use high resolution, ultra-sharp focus, professional studio quality lighting."""
 
-            # Use Nano Banana to generate image
+            # Use Gemini 2.5 Pro to generate image (Premium Quality)
             response = self.client.models.generate_content(
-                model="gemini-2.5-flash-image",
+                model="gemini-2.5-pro",
                 contents=[enhanced_prompt],
             )
 
@@ -174,15 +174,15 @@ class GeminiService:
                             # Convert to base64 data URL
                             data_url = f"data:{mime_type};base64,{base64.b64encode(image_data).decode('utf-8')}"
 
-                            logger.info(f"✅ Nano Banana: Successfully generated image (variation: {variation})")
+                            logger.info(f"✅ Gemini Pro: Successfully generated image (variation: {variation})")
                             return data_url
 
-            logger.error("No image data found in Nano Banana response")
+            logger.error("No image data found in Gemini Pro response")
             logger.error(f"Response structure: {dir(response)}")
             return None
 
         except Exception as e:
-            logger.error(f"Error generating image with Nano Banana: {str(e)}")
+            logger.error(f"Error generating image with Gemini Pro: {str(e)}")
             import traceback
             logger.error(traceback.format_exc())
             return None
