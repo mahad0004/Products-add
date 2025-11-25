@@ -1610,21 +1610,53 @@ def run_workflow_with_context(task_id, url, max_products):
 
 def run_workflow(task_id, url, max_products):
     """
-    Main workflow: Fetch from Apify last run and save to database
-    STEP 1: Get products from Apify and save to database
+    Main workflow: Start NEW Apify scrape with provided URL and save to database
+    STEP 1: Start Apify scrape, wait for completion, get products and save to database
     """
     try:
-        logger.info(f"[{task_id}] STEP 1: Fetching products from Apify last run")
+        logger.info(f"[{task_id}] STEP 1: Starting NEW Apify scrape for URL: {url}")
 
         # Update job status
         db_service.update_scrape_job(task_id, status='running')
 
-        # Fetch data from last Apify run (NO new scraping)
-        logger.info(f"[{task_id}] Getting data from Apify last run")
-        products = apify_service.get_last_run_data(limit=max_products)
+        # START A NEW APIFY SCRAPE with the provided URL
+        logger.info(f"[{task_id}] 🚀 Starting Apify scraper for {url}")
+        run_id = apify_service.start_scraper(url, max_results=max_products)
+
+        if not run_id:
+            logger.error(f"[{task_id}] Failed to start Apify scraper")
+            db_service.update_scrape_job(
+                task_id,
+                status='failed',
+                error_message='Failed to start Apify scraper',
+                completed_at=datetime.utcnow()
+            )
+            return
+
+        logger.info(f"[{task_id}] ✅ Apify scraper started - Run ID: {run_id}")
+        logger.info(f"[{task_id}] ⏱️  Waiting for Apify to complete scraping...")
+
+        # WAIT for Apify scrape to complete (max 10 minutes timeout)
+        success = apify_service.wait_for_completion(run_id, timeout=600, poll_interval=10)
+
+        if not success:
+            logger.error(f"[{task_id}] Apify scrape failed or timed out")
+            db_service.update_scrape_job(
+                task_id,
+                status='failed',
+                error_message='Apify scrape failed or timed out',
+                completed_at=datetime.utcnow()
+            )
+            return
+
+        logger.info(f"[{task_id}] ✅ Apify scrape completed successfully!")
+
+        # FETCH data from THIS SPECIFIC RUN (not "last run")
+        logger.info(f"[{task_id}] 📦 Fetching products from Apify run {run_id}")
+        products = apify_service.get_scraped_data(run_id, limit=max_products)
 
         if not products:
-            logger.warning(f"[{task_id}] No products found in last run")
+            logger.warning(f"[{task_id}] No products found in Apify run {run_id}")
             db_service.update_scrape_job(
                 task_id,
                 status='completed',
@@ -1633,7 +1665,7 @@ def run_workflow(task_id, url, max_products):
             )
             return
 
-        logger.info(f"[{task_id}] Fetched {len(products)} products from last run")
+        logger.info(f"[{task_id}] ✅ Fetched {len(products)} products from Apify run {run_id}")
 
         # Update total products
         db_service.update_scrape_job(task_id, total_products=len(products))

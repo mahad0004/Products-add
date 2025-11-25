@@ -152,6 +152,22 @@ class ApifyService:
             run_id = run_data.get('id')
             status = run_data.get('status')
 
+            # DEBUG: Log detailed run information
+            logger.info(f"🔍 DEBUG: Last run full data:")
+            logger.info(f"  Run ID: {run_id}")
+            logger.info(f"  Status: {status}")
+            logger.info(f"  Started at: {run_data.get('startedAt')}")
+            logger.info(f"  Finished at: {run_data.get('finishedAt')}")
+            logger.info(f"  Default dataset ID: {run_data.get('defaultDatasetId')}")
+
+            # Check stats
+            stats = run_data.get('stats', {})
+            logger.info(f"  Stats: {stats}")
+
+            # Check output
+            output = run_data.get('output', {})
+            logger.info(f"  Output: {output}")
+
             logger.info(f"Last Apify run: {run_id}, status: {status}")
             return run_id, status
 
@@ -176,17 +192,71 @@ class ApifyService:
         }
 
         try:
+            logger.info(f"🔍 DEBUG: Fetching data from Apify run {run_id}")
+            logger.info(f"🔍 DEBUG: URL: {url}")
+            logger.info(f"🔍 DEBUG: Params: {params}")
+
             response = requests.get(url, headers=headers, params=params, timeout=60)
+
+            logger.info(f"🔍 DEBUG: Response status: {response.status_code}")
+            logger.info(f"🔍 DEBUG: Response headers: {dict(response.headers)}")
+
             response.raise_for_status()
 
             products = response.json()
+
+            # DEBUG: Log detailed information about the response
+            logger.info(f"🔍 DEBUG: Response type: {type(products)}")
+            logger.info(f"🔍 DEBUG: Response length: {len(products) if isinstance(products, list) else 'N/A'}")
+
+            if isinstance(products, list) and len(products) > 0:
+                logger.info(f"🔍 DEBUG: First product keys: {list(products[0].keys())[:10]}")
+                logger.info(f"🔍 DEBUG: First product sample: {str(products[0])[:500]}")
+            elif isinstance(products, dict):
+                logger.info(f"🔍 DEBUG: Response is dict with keys: {list(products.keys())}")
+                logger.info(f"🔍 DEBUG: Full response: {str(products)[:1000]}")
+            else:
+                logger.info(f"🔍 DEBUG: Raw response text (first 2000 chars): {response.text[:2000]}")
+
             logger.info(f"Fetched {len(products)} products from Apify")
 
             return products
 
         except Exception as e:
             logger.error(f"Error fetching scraped data: {str(e)}")
+            import traceback
+            logger.error(f"Traceback: {traceback.format_exc()}")
             return []
+
+    def check_dataset(self, dataset_id):
+        """
+        Check dataset information and item count
+        Returns: dict with dataset info
+        """
+        url = f"{self.base_url}/datasets/{dataset_id}"
+
+        headers = {
+            "Authorization": f"Bearer {self.api_token}"
+        }
+
+        try:
+            response = requests.get(url, headers=headers, timeout=30)
+            response.raise_for_status()
+
+            data = response.json()
+            dataset_info = data.get('data', {})
+
+            logger.info(f"🔍 DEBUG: Dataset {dataset_id} info:")
+            logger.info(f"  Item count: {dataset_info.get('itemCount')}")
+            logger.info(f"  Clean item count: {dataset_info.get('cleanItemCount')}")
+            logger.info(f"  Created at: {dataset_info.get('createdAt')}")
+            logger.info(f"  Modified at: {dataset_info.get('modifiedAt')}")
+
+            return dataset_info
+
+        except Exception as e:
+            logger.error(f"Error checking dataset: {str(e)}")
+            return {}
 
     def get_last_run_data(self, limit=200):
         """
@@ -201,5 +271,21 @@ class ApifyService:
 
         if status != "SUCCEEDED":
             logger.warning(f"Last run status is {status}, not SUCCEEDED")
+
+        # Get the run details to find the dataset ID
+        url = f"{self.base_url}/actor-runs/{run_id}"
+        headers = {"Authorization": f"Bearer {self.api_token}"}
+
+        try:
+            response = requests.get(url, headers=headers, timeout=30)
+            response.raise_for_status()
+            run_data = response.json().get('data', {})
+            dataset_id = run_data.get('defaultDatasetId')
+
+            if dataset_id:
+                logger.info(f"🔍 Checking dataset {dataset_id} for run {run_id}")
+                self.check_dataset(dataset_id)
+        except Exception as e:
+            logger.warning(f"Could not check dataset info: {str(e)}")
 
         return self.get_scraped_data(run_id, limit)
