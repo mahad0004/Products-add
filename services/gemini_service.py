@@ -349,30 +349,41 @@ Return ONLY the ultra-detailed image generation prompt, no additional text."""
         """
         instructions = {
             "main": """
-EDIT INSTRUCTIONS (Main Front View):
-- Adjust camera angle to straight-on front view at eye level
-- Center the product perfectly in frame
-- Apply professional three-point studio lighting:
-  * Key light from 45° front-left
-  * Fill light from right
-  * Rim light from behind
-- Soft, diffused shadows
-- Clean, neutral background (white or light gray)
-- Professional product photography composition
-- Keep product EXACTLY as it is - only adjust angle and lighting
+EDIT INSTRUCTIONS (Main Front View - Image 1):
+🎯 CAMERA POSITION:
+- DIRECT front-facing view, STRAIGHT-ON at exact eye level (0° rotation)
+- Camera is DIRECTLY in front of the product center
+- Product is PERFECTLY CENTERED in frame
+- Show the FRONT FACE of the product prominently
+- NO side or depth visible - completely flat front view
+
+💡 LIGHTING:
+- Bright, even, FLAT lighting from front
+- Soft diffused light eliminates all shadows
+- Very bright, high-key lighting
+- Clean white or very light gray background
+- Professional studio flash lighting setup
+
+✅ RESULT: Clean, bright, straight-on front product shot with no angle or depth
 """,
             "angle1": """
-EDIT INSTRUCTIONS (45-Degree Angled View):
-- Adjust camera angle to 45-degree view showing both front and side
-- Position camera 15-20 degrees above product
-- Apply dramatic side lighting:
-  * Main light from 60° angle to emphasize dimensions
-  * Softer fill light from opposite side
-  * Backlight for rim lighting and separation
-- More contrast and depth than front view
-- Clean background with subtle gradient
-- Show product three-dimensionality
-- Keep product EXACTLY as it is - only adjust angle and lighting
+EDIT INSTRUCTIONS (Top-Down Angled View - Image 2):
+🎯 CAMERA POSITION:
+- Camera positioned HIGH ABOVE the product looking DOWN at 60-70° angle
+- Show the TOP and FRONT surfaces of the product simultaneously
+- Product viewed from BIRD'S EYE perspective
+- This creates a DRAMATICALLY DIFFERENT view than Image 1
+- Show depth, height, and three-dimensional form
+- Product fills frame but shows its 3D structure
+
+💡 LIGHTING:
+- Strong directional side lighting from 90° angle (side)
+- Creates VISIBLE shadows and highlights
+- More dramatic contrast than Image 1
+- Light gray or gradient background
+- Emphasizes product depth and dimensions
+
+✅ RESULT: Dramatic top-down angled shot showing product depth and 3D structure - CLEARLY DIFFERENT from Image 1
 """,
             "angle2": """
 EDIT INSTRUCTIONS (Side/Three-Quarter View):
