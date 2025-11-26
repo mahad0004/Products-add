@@ -10,21 +10,153 @@ import io
 import logging
 import base64
 import requests
+import threading
+from datetime import datetime, timedelta
+import pytz
 
 logger = logging.getLogger(__name__)
 
 
-class GeminiService:
-    """Service for interacting with Google Gemini API (Nano Banana)"""
+class GeminiQuotaExhaustedError(Exception):
+    """Raised when Gemini API quota is exhausted"""
+    def __init__(self, message, reset_time=None):
+        super().__init__(message)
+        self.reset_time = reset_time
 
-    def __init__(self, api_key):
-        self.api_key = api_key
-        if api_key:
-            self.client = genai.Client(api_key=api_key)
-            logger.info("✅ Initialized Gemini Client with Nano Banana (gemini-2.5-flash-image) for image editing")
+
+class GeminiService:
+    """Service for interacting with Google Gemini API (Nano Banana) with multi-key rotation"""
+
+    def __init__(self, api_keys):
+        """
+        Initialize Gemini service with one or more API keys
+
+        Args:
+            api_keys: Single API key string or comma-separated string of multiple keys
+        """
+        # Parse API keys (support comma-separated list)
+        if isinstance(api_keys, str):
+            # Remove whitespace and split by comma
+            self.api_keys = [key.strip() for key in api_keys.split(',') if key.strip()]
         else:
-            self.client = None
-            logger.warning("No Gemini API key provided")
+            self.api_keys = api_keys if api_keys else []
+
+        # Create a client for each API key
+        self.clients = []
+        self.key_names = []  # For logging which key is being used
+
+        for idx, key in enumerate(self.api_keys, 1):
+            try:
+                client = genai.Client(api_key=key)
+                self.clients.append(client)
+                self.key_names.append(f"Key {idx}")
+                logger.info(f"✅ Initialized Gemini Client #{idx} with Nano Banana (gemini-2.5-flash-image)")
+            except Exception as e:
+                logger.error(f"❌ Failed to initialize Gemini Client #{idx}: {str(e)}")
+
+        if not self.clients:
+            logger.warning("⚠️ No valid Gemini API keys provided")
+        else:
+            logger.info(f"🔄 Multi-key rotation enabled: {len(self.clients)} API keys loaded")
+            logger.info(f"   Total capacity: {len(self.clients) * 2000} requests/day (Tier 1)")
+            logger.info(f"   Max products/day: {len(self.clients) * 1000} products (Pro Mode)")
+
+        # Round-robin rotation index (thread-safe)
+        self._current_key_index = 0
+        self._rotation_lock = threading.Lock()
+
+        # Usage tracking per key
+        self.usage_counts = {f"Key {i+1}": 0 for i in range(len(self.clients))}
+
+        # Track quota exhaustion per key
+        self.quota_exhausted = {f"Key {i+1}": False for i in range(len(self.clients))}
+
+    def _calculate_quota_reset_time(self):
+        """
+        Calculate time until next quota reset (midnight Pacific Time)
+        Returns: (seconds_until_reset, reset_datetime)
+        """
+        # Get current time in Pacific timezone
+        pacific_tz = pytz.timezone('America/Los_Angeles')
+        now_pacific = datetime.now(pacific_tz)
+
+        # Calculate next midnight Pacific Time
+        next_midnight = (now_pacific + timedelta(days=1)).replace(
+            hour=0, minute=0, second=0, microsecond=0
+        )
+
+        # Calculate seconds until midnight
+        time_until_reset = (next_midnight - now_pacific).total_seconds()
+
+        logger.info(f"⏰ Current Pacific Time: {now_pacific.strftime('%Y-%m-%d %H:%M:%S %Z')}")
+        logger.info(f"⏰ Quota resets at: {next_midnight.strftime('%Y-%m-%d %H:%M:%S %Z')}")
+        logger.info(f"⏰ Time until reset: {time_until_reset / 3600:.2f} hours")
+
+        return time_until_reset, next_midnight
+
+    def _get_next_client(self):
+        """
+        Get the next client in round-robin rotation (thread-safe)
+        Returns: (client, key_name) tuple
+        """
+        if not self.clients:
+            return None, None
+
+        with self._rotation_lock:
+            client = self.clients[self._current_key_index]
+            key_name = self.key_names[self._current_key_index]
+
+            # Increment usage counter
+            self.usage_counts[key_name] = self.usage_counts.get(key_name, 0) + 1
+
+            # Move to next key for next request
+            self._current_key_index = (self._current_key_index + 1) % len(self.clients)
+
+            return client, key_name
+
+    def get_usage_stats(self):
+        """
+        Get usage statistics for all API keys
+        Returns: dict with usage counts per key
+        """
+        return self.usage_counts.copy()
+
+    def log_usage_stats(self):
+        """Log current usage statistics for all API keys"""
+        if not self.clients:
+            logger.info("No Gemini API keys configured")
+            return
+
+        logger.info(f"🔄 Gemini API Usage Statistics:")
+        logger.info(f"   Total API keys: {len(self.clients)}")
+        logger.info(f"   Total requests made: {sum(self.usage_counts.values())}")
+        for key_name, count in self.usage_counts.items():
+            logger.info(f"   {key_name}: {count} requests")
+
+    def are_all_keys_exhausted(self):
+        """
+        Check if all API keys have exhausted their quota
+        Returns: True if all keys are exhausted, False otherwise
+        """
+        if not self.clients:
+            return True
+
+        # Check if all keys are marked as quota exhausted
+        all_exhausted = all(self.quota_exhausted.values())
+
+        if all_exhausted:
+            logger.warning(f"⚠️ ALL {len(self.clients)} API keys have exhausted their quota")
+
+        return all_exhausted
+
+    def reset_quota_flags(self):
+        """
+        Reset quota exhaustion flags for all keys (call this after quota reset at midnight Pacific)
+        """
+        for key_name in self.quota_exhausted:
+            self.quota_exhausted[key_name] = False
+
+        logger.info(f"✅ Reset quota exhaustion flags for all {len(self.clients)} API keys")
 
     def edit_product_image(self, original_image_url, product_title, variation="main"):
         """
@@ -40,11 +172,13 @@ class GeminiService:
             str: Base64 data URL of edited image or None if editing fails
         """
         try:
-            if not self.client:
+            # Get next client in rotation
+            client, key_name = self._get_next_client()
+            if not client:
                 logger.warning("Gemini client not configured")
                 return None
 
-            logger.info(f"🍌 Nano Banana: Editing product image for: {product_title} (variation: {variation})")
+            logger.info(f"🍌 Nano Banana [{key_name}]: Editing product image for: {product_title} (variation: {variation})")
 
             # Download original image
             response = requests.get(original_image_url, timeout=10)
@@ -58,29 +192,57 @@ class GeminiService:
             edit_instructions = self._get_edit_instructions(variation)
 
             # Create edit prompt
-            edit_prompt = f"""Edit this product image of {product_title}.
+            edit_prompt = f"""You are a professional product photographer. Edit this product image to create an ultra-realistic, professional e-commerce photograph.
+
+PRODUCT: {product_title}
 
 {edit_instructions}
 
-🚫 CRITICAL - ABSOLUTELY NO TEXT ANYWHERE:
-1. Remove ALL text, letters, numbers, words, logos, brand names, labels, watermarks
-2. Replace any text areas with CLEAN, BLANK surfaces matching the product's material
-3. The product must be COMPLETELY TEXT-FREE - no visible typography anywhere
-4. If there are labels or stickers, replace them with plain solid-color surfaces
-5. No product model numbers, no brand marks, no printed words of any kind
+🎨 ULTRA-REALISTIC PROFESSIONAL PHOTOGRAPHY REQUIREMENTS:
 
-✅ WHAT TO KEEP:
+1. PHOTOREALISM - Make it look like a real photograph taken by a professional photographer:
+   - Natural, realistic textures and materials
+   - Accurate lighting with soft shadows and natural highlights
+   - Proper depth of field with slight background blur
+   - Professional color grading (not oversaturated, natural tones)
+   - Studio-quality composition and framing
+
+2. PROFESSIONAL QUALITY:
+   - Ultra-sharp focus on the product
+   - High resolution, crisp details
+   - Clean, professional presentation
+   - Perfect product exposure (not too bright, not too dark)
+   - Natural reflections and surface details
+
+3. BACKGROUND:
+   - Clean, minimal background (white, light gray, or subtle gradient)
+   - NO distracting elements or patterns
+   - Professional studio backdrop appearance
+   - Seamless background-to-product transition
+
+🚫 ABSOLUTELY NO TEXT OR BRANDING - CRITICAL:
+1. Remove ALL text: letters, numbers, words, symbols, logos, brand names, labels, watermarks, tags
+2. Remove ALL company names, manufacturer marks, model numbers, serial numbers
+3. Replace text areas with CLEAN, BLANK surfaces that match the product's material and color
+4. If there are labels or stickers, replace with plain solid-color matching surfaces
+5. The product must be COMPLETELY TEXT-FREE and BRAND-FREE
+6. No visible typography or written characters of ANY kind anywhere in the image
+7. Product surface should be clean and unmarked where text was removed
+
+✅ WHAT TO PRESERVE:
 1. Keep the EXACT SAME PRODUCT - only change angle, lighting, and background
-2. DO NOT change product design, colors, or features
-3. Maintain product realism and quality
-4. Professional e-commerce photography quality
-5. High resolution, ultra-sharp focus
-6. Clean, professional background"""
+2. DO NOT change product shape, design, structure, or physical features
+3. Maintain accurate product colors and materials
+4. Keep product dimensions and proportions identical
+5. Preserve all product features except text/branding
+
+🎯 FINAL RESULT:
+A photorealistic, professional product photograph that looks like it was shot in a high-end photography studio - clean, sharp, professional, and completely text-free."""
 
             logger.info(f"Nano Banana edit prompt: {edit_prompt[:120]}...")
 
             # Use Nano Banana (Gemini 2.5 Flash Image) to edit the image
-            response = self.client.models.generate_content(
+            response = client.models.generate_content(
                 model="gemini-2.5-flash-image",
                 contents=[edit_prompt, image],
             )
@@ -99,7 +261,7 @@ class GeminiService:
                             # Convert to base64 data URL
                             data_url = f"data:{mime_type};base64,{base64.b64encode(image_data).decode('utf-8')}"
 
-                            logger.info(f"✅ Nano Banana: Successfully edited image (variation: {variation})")
+                            logger.info(f"✅ Nano Banana [{key_name}]: Successfully edited image (variation: {variation})")
                             return data_url
 
             logger.error("No edited image data found in Nano Banana response")
@@ -107,7 +269,27 @@ class GeminiService:
             return None
 
         except Exception as e:
-            logger.error(f"❌ Error editing image with Nano Banana: {str(e)}")
+            error_str = str(e)
+
+            # Check if this is a quota exhaustion error
+            if "429" in error_str or "RESOURCE_EXHAUSTED" in error_str or "Quota exceeded" in error_str:
+                logger.error(f"❌ [{key_name}] QUOTA EXHAUSTED for {product_title}")
+                logger.error(f"   Error: {error_str}")
+
+                # Mark this key as quota exhausted
+                self.quota_exhausted[key_name] = True
+
+                # Calculate time until quota reset
+                seconds_until_reset, reset_time = self._calculate_quota_reset_time()
+
+                # Raise custom exception
+                raise GeminiQuotaExhaustedError(
+                    f"Gemini API quota exhausted. Quota resets at {reset_time.strftime('%Y-%m-%d %H:%M:%S %Z')}",
+                    reset_time=reset_time
+                )
+
+            # Other errors
+            logger.error(f"❌ Error editing image with Nano Banana: {error_str}")
             logger.error(f"   Product: {product_title}")
             logger.error(f"   Variation: {variation}")
             logger.error(f"   Image URL: {original_image_url[:100]}...")
@@ -128,11 +310,13 @@ class GeminiService:
             str: Base64 data URL of generated image or None if generation fails
         """
         try:
-            if not self.client:
+            # Get next client in rotation
+            client, key_name = self._get_next_client()
+            if not client:
                 logger.warning("Gemini client not configured")
                 return None
 
-            logger.info(f"🍌 Nano Banana: Generating image for: {product_title} (variation: {variation})")
+            logger.info(f"🍌 Nano Banana [{key_name}]: Generating image for: {product_title} (variation: {variation})")
             logger.info(f"Base prompt: {image_prompt[:150]}...")
 
             # Create variation-specific modifications
@@ -155,7 +339,7 @@ class GeminiService:
 9. Use high resolution, ultra-sharp focus, professional studio quality lighting."""
 
             # Use Nano Banana (Gemini 2.5 Flash Image) to generate image
-            response = self.client.models.generate_content(
+            response = client.models.generate_content(
                 model="gemini-2.5-flash-image",
                 contents=[enhanced_prompt],
             )
@@ -174,7 +358,7 @@ class GeminiService:
                             # Convert to base64 data URL
                             data_url = f"data:{mime_type};base64,{base64.b64encode(image_data).decode('utf-8')}"
 
-                            logger.info(f"✅ Nano Banana: Successfully generated image (variation: {variation})")
+                            logger.info(f"✅ Nano Banana [{key_name}]: Successfully generated image (variation: {variation})")
                             return data_url
 
             logger.error("No image data found in Nano Banana response")
@@ -182,7 +366,27 @@ class GeminiService:
             return None
 
         except Exception as e:
-            logger.error(f"Error generating image with Nano Banana: {str(e)}")
+            error_str = str(e)
+
+            # Check if this is a quota exhaustion error
+            if "429" in error_str or "RESOURCE_EXHAUSTED" in error_str or "Quota exceeded" in error_str:
+                logger.error(f"❌ [{key_name}] QUOTA EXHAUSTED for {product_title}")
+                logger.error(f"   Error: {error_str}")
+
+                # Mark this key as quota exhausted
+                self.quota_exhausted[key_name] = True
+
+                # Calculate time until quota reset
+                seconds_until_reset, reset_time = self._calculate_quota_reset_time()
+
+                # Raise custom exception
+                raise GeminiQuotaExhaustedError(
+                    f"Gemini API quota exhausted. Quota resets at {reset_time.strftime('%Y-%m-%d %H:%M:%S %Z')}",
+                    reset_time=reset_time
+                )
+
+            # Other errors
+            logger.error(f"Error generating image with Nano Banana: {error_str}")
             import traceback
             logger.error(traceback.format_exc())
             return None
@@ -201,7 +405,9 @@ class GeminiService:
             str: A detailed prompt for image generation
         """
         try:
-            if not self.client:
+            # Get next client in rotation
+            client, key_name = self._get_next_client()
+            if not client:
                 logger.warning("Gemini client not configured, using fallback prompt")
                 return f"Professional e-commerce product photography of {product_title}, clean white background, studio lighting, high resolution, photorealistic"
 
@@ -246,13 +452,13 @@ BUT with ALL text, logos, and typography COMPLETELY REMOVED and replaced with cl
 Return ONLY the ultra-detailed image generation prompt, no additional text."""
 
             # Use Gemini Vision (text model) to analyze and create prompt
-            response = self.client.models.generate_content(
+            response = client.models.generate_content(
                 model="gemini-2.0-flash-exp",
                 contents=[analysis_prompt, image]
             )
 
             image_prompt = response.text.strip()
-            logger.info(f"Generated image prompt for {product_title}: {image_prompt[:100]}...")
+            logger.info(f"[{key_name}] Generated image prompt for {product_title}: {image_prompt[:100]}...")
 
             return image_prompt
 
@@ -349,41 +555,66 @@ Return ONLY the ultra-detailed image generation prompt, no additional text."""
         """
         instructions = {
             "main": """
-EDIT INSTRUCTIONS (Main Front View - Image 1):
-🎯 CAMERA POSITION:
-- DIRECT front-facing view, STRAIGHT-ON at exact eye level (0° rotation)
-- Camera is DIRECTLY in front of the product center
-- Product is PERFECTLY CENTERED in frame
-- Show the FRONT FACE of the product prominently
-- NO side or depth visible - completely flat front view
+📸 IMAGE 1 SPECIFICATION - DIRECT FRONT VIEW (STRAIGHT-ON):
 
-💡 LIGHTING:
-- Bright, even, FLAT lighting from front
-- Soft diffused light eliminates all shadows
-- Very bright, high-key lighting
-- Clean white or very light gray background
-- Professional studio flash lighting setup
+🎯 CAMERA ANGLE & COMPOSITION:
+- DIRECT front-facing view at EXACT EYE LEVEL (0° tilt, 0° rotation)
+- Camera positioned STRAIGHT-ON, perpendicular to product's front face
+- Product PERFECTLY CENTERED in frame
+- Show ONLY the FRONT FACE - no sides, no depth, no 3D perspective
+- Completely FLAT, 2D-style presentation (like a catalog shot)
+- Fill 80% of frame with product
+- Eye-level horizontal alignment - NOT from above or below
 
-✅ RESULT: Clean, bright, straight-on front product shot with no angle or depth
+💡 LIGHTING STYLE:
+- Bright, even, SOFT DIFFUSED lighting from directly in front
+- NO harsh shadows - completely shadow-free or minimal soft shadows
+- High-key, bright exposure (slightly overexposed for clean look)
+- Pure white or very light gray seamless background
+- Professional studio softbox lighting setup
+- Bright, airy, clean aesthetic
+
+📐 PERSPECTIVE:
+- ZERO perspective distortion
+- FLAT, orthographic-style view
+- NO depth or 3D dimensionality visible
+- Product appears as if photographed head-on for a technical manual
+
+🎯 FINAL RESULT: Ultra-clean, bright, direct front view with no angle - professional catalog-style product photography
 """,
             "angle1": """
-EDIT INSTRUCTIONS (Top-Down Angled View - Image 2):
-🎯 CAMERA POSITION:
-- Camera positioned HIGH ABOVE the product looking DOWN at 60-70° angle
-- Show the TOP and FRONT surfaces of the product simultaneously
-- Product viewed from BIRD'S EYE perspective
-- This creates a DRAMATICALLY DIFFERENT view than Image 1
-- Show depth, height, and three-dimensional form
-- Product fills frame but shows its 3D structure
+📸 IMAGE 2 SPECIFICATION - TOP-DOWN ANGLED VIEW (BIRD'S EYE):
 
-💡 LIGHTING:
-- Strong directional side lighting from 90° angle (side)
-- Creates VISIBLE shadows and highlights
-- More dramatic contrast than Image 1
-- Light gray or gradient background
-- Emphasizes product depth and dimensions
+🎯 CAMERA ANGLE & COMPOSITION:
+- Camera positioned HIGH ABOVE product, looking DOWN at steep 60-70° angle from vertical
+- BIRD'S EYE VIEW / TOP-DOWN perspective
+- Show BOTH the TOP SURFACE and FRONT FACE simultaneously
+- This creates DRAMATIC 3D DEPTH and dimensionality
+- Product positioned at 45° rotation to camera (shows corner/edge)
+- Fill 70% of frame showing full 3D structure
+- COMPLETELY DIFFERENT from Image 1 - this is an angled, dimensional view
 
-✅ RESULT: Dramatic top-down angled shot showing product depth and 3D structure - CLEARLY DIFFERENT from Image 1
+💡 LIGHTING STYLE:
+- Dramatic SIDE LIGHTING from 90° angle (strong directional light)
+- Creates DISTINCT shadows and highlights showing product depth
+- Medium contrast (not too bright, shows texture and dimension)
+- Light gray or subtle gradient background
+- Single key light from side creates depth and drama
+- Slightly darker than Image 1 to emphasize 3D form
+
+📐 PERSPECTIVE:
+- STRONG perspective distortion showing depth
+- 3D dimensional view showing height, width, AND depth
+- Visible TOP, FRONT, and potentially SIDE surfaces
+- Product corners and edges clearly visible
+- Shows product as a three-dimensional object
+
+⚡ KEY DIFFERENCE FROM IMAGE 1:
+- Image 1 = Flat, straight-on, bright, no shadows, 2D appearance
+- Image 2 = Angled, top-down, dramatic shadows, 3D appearance
+- These must look like TWO COMPLETELY DIFFERENT PHOTOGRAPHS
+
+🎯 FINAL RESULT: Dramatic top-down angled view showing full 3D structure with depth and dimension - looks TOTALLY DIFFERENT from Image 1
 """,
             "angle2": """
 EDIT INSTRUCTIONS (Side/Three-Quarter View):

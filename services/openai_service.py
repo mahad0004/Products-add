@@ -44,20 +44,28 @@ class OpenAIService:
 3. Produce:
    - title: a long, attention-grabbing product title built by prepending and appending relevant words/phrases to the original title (use synonyms, adjectives, target keywords). Make it long but natural (max 150 chars).
    - short_title: a concise, cleaned version for UI (max 60 chars).
-   - seo_title: highly SEO-optimized title (include primary keyword near the front, include brand if present, max 70 chars).
+   - seo_title: highly SEO-optimized title (include primary keyword near the front, max 70 chars).
    - seo_description: short meta description for search results (110–160 chars), includes main keyword and a call to action.
    - body_html: a very large, marketer-style HTML description (3–6 paragraphs) with headings, bullet lists of features, benefits, use cases, technical specs, and a persuasive closing paragraph + a short FAQ section (2–3 Q&A). Include the main keyword 4–6 times naturally. Use <h2>, <p>, <ul>, <li>, <strong>.
    - meta_keywords: comma-separated list of 8–15 keyword/phrase variants (primary keywords, long-tail).
    - meta_tags: array of short tags (3–8 items).
    - slug: URL-safe slug derived from short_title (lowercase, hyphens).
    - meta_description: same as seo_description (duplicate is OK).
-4. If brand/vendor is available in input, Don't include it in seo_title, title & Description.
-5. If numeric specs (weight, dimensions, capacity, etc.) are present in the raw description, surface them in a TECHNICAL SPECS bullet list.
-6. Always preserve factual numbers from input (do not invent specs). You may expand phrasing but not invent new numeric values.
-7. Use US English. Avoid adding price or stock information.
-8. Ensure body_html is at least ~300–800 words depending on the product; emphasize benefits and use-cases.
-9. When forming keywords, include variations, synonyms, and long-tail phrases.
-10. Return valid JSON only. Do not include any commentary, explanations, or extra fields."""
+
+🚫 CRITICAL - MUST REMOVE:
+4. Remove ALL brand names, company names, vendor names, manufacturer names from title, seo_title, body_html, and all descriptions.
+5. Remove ALL contact information: phone numbers, email addresses, websites, social media handles, addresses.
+6. Remove ALL trademarked names, logos references, and branded terms.
+7. Use GENERIC descriptive terms instead (e.g., "Premium" instead of "Nike", "Professional" instead of brand names).
+8. Focus on product features, benefits, and specifications WITHOUT mentioning specific brands.
+
+✅ CONTENT RULES:
+9. If numeric specs (weight, dimensions, capacity, etc.) are present in the raw description, surface them in a TECHNICAL SPECS bullet list.
+10. Always preserve factual numbers from input (do not invent specs). You may expand phrasing but not invent new numeric values.
+11. Use US English. Avoid adding price or stock information.
+12. Ensure body_html is at least ~300–800 words depending on the product; emphasize benefits and use-cases.
+13. When forming keywords, include variations, synonyms, and long-tail phrases.
+14. Return valid JSON only. Do not include any commentary, explanations, or extra fields.
 
         user_prompt = f"""Raw product input (do not modify; use as source of truth):
 {{
@@ -75,6 +83,14 @@ Instructions:
 - Create meta fields (meta_keywords array or comma list) including synonyms and long-tail phrases.
 - Make seo_title <= 70 chars and seo_description 110–160 chars.
 - Do not invent numeric specs. If specs not provided, do not add numbers.
+
+⚠️ CRITICAL - CONTENT CLEANING:
+- REMOVE ALL brand names, company names, vendor names from title, seo_title, body_html, and descriptions
+- REMOVE ALL contact info: phone numbers (any format), email addresses, websites, URLs, social media handles, physical addresses
+- REMOVE ALL trademarked names and branded terms
+- Replace brand references with generic descriptive terms (e.g., "Premium Quality", "Professional Grade", "High-Performance")
+- Focus ONLY on product features, materials, benefits, and specifications
+
 - Output only JSON following the exact keys required.
 
 Return JSON with these keys:
