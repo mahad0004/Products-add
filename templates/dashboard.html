@@ -254,8 +254,16 @@
     }
 
     async function createAIDupeJob(jobId, fastMode) {
-        const mode = fastMode ? 'FAST MODE (1 image, no AI edits)' : 'PRO MODE (2 AI-edited images with Nano Banana)';
-        if (!confirm(`This will create AI-enhanced versions for ALL products using ${mode}. Continue?`)) {
+        const mode = fastMode ? 'FAST MODE (1 image, no AI edits)' : 'PRO MODE (1 AI-edited image with Nano Banana)';
+
+        // Ask user if they want to skip products
+        const skipProducts = prompt('How many products to skip? (Enter 0 to process all, or 800 to skip first 800)', '0');
+        if (skipProducts === null) return; // User cancelled
+
+        const productOffset = parseInt(skipProducts) || 0;
+
+        const skipMessage = productOffset > 0 ? `\n\nSkipping first ${productOffset} products.` : '';
+        if (!confirm(`This will create AI-enhanced versions using ${mode}.${skipMessage}\n\nContinue?`)) {
             return;
         }
 
@@ -265,7 +273,8 @@
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
                     job_id: jobId,
-                    fast_mode: fastMode
+                    fast_mode: fastMode,
+                    product_offset: productOffset
                 })
             });
 
