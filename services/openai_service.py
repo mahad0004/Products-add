@@ -39,62 +39,96 @@ class OpenAIService:
         # Build prompt
         system_prompt = """You are a professional e-commerce copywriter and SEO specialist. Your task is to take a raw product title and raw product description and produce a clean, highly-SEO optimized product payload for publishing. Always follow these rules:
 
-1. Output only JSON (no extra commentary).
-2. Keep JSON keys exactly as specified in the schema: title, seo_title, seo_description, body_html, meta_keywords, meta_description, meta_tags, short_title, slug.
-3. Produce:
-   - title: a long, attention-grabbing product title built by prepending and appending relevant words/phrases to the original title (use synonyms, adjectives, target keywords). Make it long but natural (max 150 chars).
-   - short_title: a concise, cleaned version for UI (max 60 chars).
-   - seo_title: highly SEO-optimized title (include primary keyword near the front, max 70 chars).
-   - seo_description: short meta description for search results (110-160 chars), includes main keyword and a call to action.
-   - body_html: a very large, marketer-style HTML description (3-6 paragraphs) with headings, bullet lists of features, benefits, use cases, technical specs, and a persuasive closing paragraph + a short FAQ section (2-3 Q&A). Include the main keyword 4-6 times naturally. Use <h2>, <p>, <ul>, <li>, <strong>.
-   - meta_keywords: comma-separated list of 8-15 keyword/phrase variants (primary keywords, long-tail).
-   - meta_tags: array of short tags (3-8 items).
-   - slug: URL-safe slug derived from short_title (lowercase, hyphens).
-   - meta_description: same as seo_description (duplicate is OK).
+========== MOST IMPORTANT - BRAND & CONTACT REMOVAL (DO THIS FIRST!) ==========
+1. REMOVE ALL BRAND NAMES from title, seo_title, body_html, and ALL text fields:
+   - Examples to remove: "Black Bull", "BLACK BULL", "System Tek", "Euroslide", "ModSec", "Securus", "ConeLITE", etc.
+   - Replace with GENERIC terms: "Premium", "Professional", "Heavy Duty", "High-Performance", "Industrial", etc.
 
-CRITICAL - MUST REMOVE:
-4. Remove ALL brand names, company names, vendor names, manufacturer names from title, seo_title, body_html, and all descriptions.
-5. Remove ALL contact information: phone numbers, email addresses, websites, social media handles, addresses.
-6. Remove ALL trademarked names, logos references, and branded terms.
-7. Use GENERIC descriptive terms instead (e.g., "Premium" instead of "Nike", "Professional" instead of brand names).
-8. Focus on product features, benefits, and specifications WITHOUT mentioning specific brands.
+2. REMOVE ALL COMPANY NAMES and MANUFACTURER NAMES from ALL fields:
+   - Any proper nouns that are company/brand names MUST be removed
+   - Do NOT keep ANY branded product line names
 
-CONTENT RULES:
-9. If numeric specs (weight, dimensions, capacity, etc.) are present in the raw description, surface them in a TECHNICAL SPECS bullet list.
-10. Always preserve factual numbers from input (do not invent specs). You may expand phrasing but not invent new numeric values.
-11. Use US English. Avoid adding price or stock information.
-12. Ensure body_html is at least ~300-800 words depending on the product; emphasize benefits and use-cases.
-13. When forming keywords, include variations, synonyms, and long-tail phrases.
-14. Return valid JSON only. Do not include any commentary, explanations, or extra fields."""
+3. REMOVE ALL CONTACT INFORMATION from title and body_html:
+   - Phone numbers: ALL formats (e.g., 01234 567890, +44 1234 567890, (123) 456-7890, 123-456-7890)
+   - Email addresses: ALL formats (e.g., info@company.com, sales@example.co.uk)
+   - Websites: ALL URLs and domain names (e.g., www.example.com, example.co.uk, https://...)
+   - Social media: ALL handles and links (@company, facebook.com/company)
+   - Physical addresses: ALL street addresses, postcodes, locations
 
-        user_prompt = f"""Raw product input (do not modify; use as source of truth):
+4. SCAN THE ENTIRE DESCRIPTION and remove ANY occurrence of:
+   - Phone numbers (look for patterns like: 0xxxx xxxxxx, +xx, xxx-xxx-xxxx)
+   - Email addresses (look for: xxx@xxx.xxx)
+   - Websites (look for: www., http, .com, .co.uk, .net, etc.)
+   - Company names in footer/header sections
+
+5. If you find contact info or brand names, DELETE them completely - do NOT replace with placeholders
+
+========== JSON OUTPUT FORMAT ==========
+6. Output only JSON (no extra commentary).
+7. Keep JSON keys exactly as specified: title, seo_title, seo_description, body_html, meta_keywords, meta_description, meta_tags, short_title, slug.
+8. Produce:
+   - title: attention-grabbing product title with GENERIC descriptive terms (max 150 chars). NO BRAND NAMES!
+   - short_title: concise version for UI (max 60 chars). NO BRAND NAMES!
+   - seo_title: SEO-optimized title with keyword near front (max 70 chars). NO BRAND NAMES!
+   - seo_description: meta description (110-160 chars) with keyword and call to action. NO BRAND NAMES!
+   - body_html: large HTML description (3-6 paragraphs) with headings, bullet lists, features, benefits, specs, FAQ. NO BRAND NAMES! NO CONTACT INFO!
+   - meta_keywords: comma-separated list of 8-15 keyword variants. NO BRAND NAMES!
+   - meta_tags: array of 3-8 short tags. NO BRAND NAMES!
+   - slug: URL-safe slug from short_title (lowercase, hyphens). NO BRAND NAMES!
+   - meta_description: same as seo_description
+
+========== CONTENT RULES ==========
+9. Preserve factual numbers (dimensions, capacity, weight) in TECHNICAL SPECS section
+10. Do NOT invent new specs - only use what's provided
+11. Use US English
+12. Ensure body_html is 300-800 words
+13. Focus ONLY on product features, materials, benefits, and specifications
+14. Return ONLY valid JSON - no extra text or commentary"""
+
+        user_prompt = f"""Raw product input:
 {{
   "input_title": "{title}",
   "input_description": "{description[:1000]}",
   "brand": "{vendor}"
 }}
 
-Instructions:
-- Use the raw input fields above to generate the JSON output required by the system prompt.
-- Primary keyword = the most important noun phrase from input_title (choose best guess).
-- Prepend and append strong adjectives and relevant search phrases to create a long marketing title (but keep it natural).
-- Produce a short_title for UI and a slug derived from it.
-- Create body_html (~300-800+ words) containing headings, 3-5 benefit bullets, 3 use-cases, technical specs section (use specs if provided), and 2-3 short FAQ Q&A.
-- Create meta fields (meta_keywords array or comma list) including synonyms and long-tail phrases.
-- Make seo_title <= 70 chars and seo_description 110-160 chars.
-- Do not invent numeric specs. If specs not provided, do not add numbers.
+========== YOUR TASK ==========
+1. FIRST - SCAN for and REMOVE these from BOTH title AND description:
+   - Brand names: Black Bull, System Tek, Euroslide, ModSec, Securus, ANY proper noun brands
+   - Phone numbers in ANY format: digits like 1234567890, patterns with dashes or spaces
+   - Emails: any patterns like info at company dot com
+   - Websites: URLs like www dot example dot com or https patterns
+   - Physical addresses: street names, postcodes, city names with addresses
+   - Social media: handles and links to social platforms
 
-CRITICAL - CONTENT CLEANING:
-- REMOVE ALL brand names, company names, vendor names from title, seo_title, body_html, and descriptions
-- REMOVE ALL contact info: phone numbers (any format), email addresses, websites, URLs, social media handles, physical addresses
-- REMOVE ALL trademarked names and branded terms
-- Replace brand references with generic descriptive terms (e.g., "Premium Quality", "Professional Grade", "High-Performance")
-- Focus ONLY on product features, materials, benefits, and specifications
+2. SECOND - Replace removed brand names with GENERIC terms:
+   - Use: Premium, Professional, Heavy Duty, High-Performance, Industrial Grade, Commercial
+   - Example: Black Bull Protection Guard becomes Premium Protection Guard
+   - Example: System Tek Workbench becomes Professional Workbench
 
-- Output only JSON following the exact keys required.
+3. THIRD - Generate SEO-optimized JSON with:
+   - title: Long, keyword-rich title with NO brand names (max 150 chars)
+   - short_title: Concise UI version with NO brand names (max 60 chars)
+   - seo_title: SEO title with NO brand names (max 70 chars)
+   - seo_description: Meta description with NO brand names (110-160 chars)
+   - body_html: Rich HTML description (300-800 words) with NO brand names, NO contact info
+   - meta_keywords: Keyword list with NO brand names (8-15 items)
+   - meta_tags: Short tags with NO brand names (3-8 items)
+   - slug: URL-safe slug with NO brand names
+   - meta_description: Same as seo_description
 
-Return JSON with these keys:
-{{ "title","short_title","seo_title","seo_description","body_html","meta_keywords","meta_description","meta_tags","slug" }}"""
+4. IMPORTANT - In body_html:
+   - Include headings (<h2>), paragraphs (<p>), bullet lists (<ul><li>)
+   - Add technical specs section if numeric specs exist
+   - Add 2-3 short FAQ Q&A
+   - SCAN ENTIRE HTML for phone numbers, emails, websites and REMOVE them
+   - Do NOT invent specs
+
+========== OUTPUT ==========
+Return ONLY valid JSON with these exact keys:
+{{ "title","short_title","seo_title","seo_description","body_html","meta_keywords","meta_description","meta_tags","slug" }}
+
+NO explanations, NO comments, ONLY JSON."""
 
         try:
             if not self.client:

@@ -638,6 +638,21 @@ def create_ai_dupes():
 
                 image_prompt = f"Nano Banana edited variations of {source_product.title}"
 
+                # Get source URL from scrape job
+                source_url = None
+                if source_product.scrape_job:
+                    source_url = source_product.scrape_job.source_url
+
+                # Get existing tags and add source URL if provided
+                existing_tags = enhanced_product.get('tags', source_product.tags) or ''
+                tags_list = [tag.strip() for tag in existing_tags.split(',') if tag.strip()]
+
+                # Add source URL as a tag if provided
+                if source_url and source_url not in tags_list:
+                    tags_list.append(source_url)
+
+                combined_tags = ', '.join(tags_list)
+
                 # Create AI product with enhanced data
                 ai_product = AIProduct(
                     source_product_id=source_product.id,
@@ -645,7 +660,7 @@ def create_ai_dupes():
                     handle=enhanced_product.get('slug', source_product.handle),
                     body_html=enhanced_product.get('body_html', source_product.body_html),
                     product_type=source_product.product_type,
-                    tags=enhanced_product.get('tags', source_product.tags),
+                    tags=combined_tags,
                     vendor=source_product.vendor,
                     seo_title=enhanced_product.get('seo_title', source_product.seo_title),
                     seo_description=enhanced_product.get('seo_description', source_product.seo_description),
@@ -1048,10 +1063,18 @@ def health_check():
 
 # ==================== WORKFLOW FUNCTIONS ====================
 
-def process_single_product(source_product, ai_job_id, fast_mode, created_counter, pushed_counter):
+def process_single_product(source_product, ai_job_id, fast_mode, created_counter, pushed_counter, source_url=None):
     """
     Process a single product: Create AI product and push to Shopify
     Thread-safe function for parallel processing
+
+    Args:
+        source_product: The source product to process
+        ai_job_id: The AI job ID
+        fast_mode: If True, skip AI image generation
+        created_counter: Thread-safe counter for created products
+        pushed_counter: Thread-safe counter for pushed products
+        source_url: Optional source website URL to add as a tag
 
     Returns: tuple (success: bool, error_message: str or None)
     """
@@ -1148,6 +1171,16 @@ def process_single_product(source_product, ai_job_id, fast_mode, created_counter
                 image_prompt = f"Nano Banana edited variations of {source_product.title}"
 
             # STEP 3: Create AI product in database
+            # Get existing tags and add source URL if provided
+            existing_tags = enhanced_product.get('tags', source_product.tags) or ''
+            tags_list = [tag.strip() for tag in existing_tags.split(',') if tag.strip()]
+
+            # Add source URL as a tag if provided
+            if source_url and source_url not in tags_list:
+                tags_list.append(source_url)
+
+            combined_tags = ', '.join(tags_list)
+
             ai_product = AIProduct(
                 source_product_id=source_product.id,
                 ai_job_id=ai_job_id,
@@ -1155,7 +1188,7 @@ def process_single_product(source_product, ai_job_id, fast_mode, created_counter
                 handle=enhanced_product.get('slug', source_product.handle),
                 body_html=enhanced_product.get('body_html', source_product.body_html),
                 product_type=source_product.product_type,
-                tags=enhanced_product.get('tags', source_product.tags),
+                tags=combined_tags,
                 vendor=source_product.vendor,
                 seo_title=enhanced_product.get('seo_title', source_product.seo_title),
                 seo_description=enhanced_product.get('seo_description', source_product.seo_description),
@@ -1327,7 +1360,7 @@ def process_ai_job_async(ai_job_id, fast_mode=False, product_limit=None, product
                 for idx, source_product in enumerate(products, 1):
                     try:
                         success, error = process_single_product(
-                            source_product, ai_job_id, fast_mode, created_counter, pushed_counter
+                            source_product, ai_job_id, fast_mode, created_counter, pushed_counter, source_job.source_url
                         )
                         logger.info(f"[AI Job {ai_job_id}] Progress: {idx}/{len(products)}")
                     except GeminiQuotaExhaustedError as e:
@@ -1351,7 +1384,8 @@ def process_ai_job_async(ai_job_id, fast_mode=False, product_limit=None, product
                             ai_job_id,
                             fast_mode,
                             created_counter,
-                            pushed_counter
+                            pushed_counter,
+                            source_job.source_url
                         ): product for product in products
                     }
 
@@ -1430,7 +1464,7 @@ def process_ai_job_async(ai_job_id, fast_mode=False, product_limit=None, product
                     for idx, source_product in enumerate(failed_due_to_quota, 1):
                         try:
                             success, error = process_single_product(
-                                source_product, ai_job_id, fast_mode, retry_created, retry_pushed
+                                source_product, ai_job_id, fast_mode, retry_created, retry_pushed, source_job.source_url
                             )
                             logger.info(f"[AI Job {ai_job_id}] Retry Progress: {idx}/{len(failed_due_to_quota)}")
                         except GeminiQuotaExhaustedError as e:
@@ -1452,7 +1486,8 @@ def process_ai_job_async(ai_job_id, fast_mode=False, product_limit=None, product
                                 ai_job_id,
                                 fast_mode,
                                 retry_created,
-                                retry_pushed
+                                retry_pushed,
+                                source_job.source_url
                             ): product for product in failed_due_to_quota
                         }
 
