@@ -972,6 +972,74 @@ def cancel_ai_push():
         return jsonify({'message': 'No AI push in progress'})
 
 
+# Global progress tracking for fixing Shopify products
+fix_shopify_progress = {
+    'total': 0,
+    'current': 0,
+    'status': 'idle',  # idle, running, completed, error, cancelled
+    'message': '',
+    'cancel_requested': False,
+    'updated_count': 0
+}
+
+
+@app.route('/api/fix-shopify-products', methods=['POST'])
+@login_required
+def fix_shopify_products():
+    """Fix existing Shopify products by removing brand names and contact info"""
+    try:
+        data = request.get_json()
+        product_limit = data.get('product_limit', 1000)  # Default 1000 products
+
+        global fix_shopify_progress
+        if fix_shopify_progress['status'] == 'running':
+            return jsonify({'error': 'Fix operation already in progress'}), 400
+
+        # Reset progress
+        fix_shopify_progress = {
+            'total': product_limit,
+            'current': 0,
+            'status': 'running',
+            'message': f'Starting to fix {product_limit} products...',
+            'cancel_requested': False,
+            'updated_count': 0
+        }
+
+        # Run in background
+        executor.submit(fix_shopify_products_async, product_limit)
+
+        return jsonify({
+            'message': f'Started fixing {product_limit} products',
+            'status': 'started',
+            'total': product_limit
+        })
+
+    except Exception as e:
+        logger.error(f"Error starting fix operation: {str(e)}")
+        return jsonify({'error': str(e)}), 500
+
+
+@app.route('/api/fix-shopify-progress', methods=['GET'])
+@login_required
+def get_fix_shopify_progress():
+    """Get fix Shopify products progress"""
+    return jsonify(fix_shopify_progress)
+
+
+@app.route('/api/cancel-fix-shopify', methods=['POST'])
+@login_required
+def cancel_fix_shopify():
+    """Cancel ongoing fix Shopify operation"""
+    global fix_shopify_progress
+    if fix_shopify_progress['status'] == 'running':
+        fix_shopify_progress['cancel_requested'] = True
+        fix_shopify_progress['message'] = 'Cancellation requested...'
+        logger.info("Fix Shopify cancellation requested")
+        return jsonify({'message': 'Cancellation requested'})
+    else:
+        return jsonify({'message': 'No fix operation in progress'})
+
+
 @app.route('/health', methods=['GET'])
 def health_check():
     """Health check endpoint"""
@@ -1956,6 +2024,140 @@ def push_product_to_shopify(product_id):
     except Exception as e:
         logger.error(f"Error pushing product {product_id} to Shopify: {str(e)}", exc_info=True)
         return False
+
+
+def fix_shopify_products_async(product_limit):
+    """
+    Fix existing Shopify products by removing brand names and contact info
+    Fetches latest N products from Shopify and re-processes them through OpenAI
+    """
+    global fix_shopify_progress
+
+    with app.app_context():
+        try:
+            logger.info(f"Starting fix operation for {product_limit} products")
+            fix_shopify_progress['message'] = f'Fetching {product_limit} products from Shopify...'
+
+            # Fetch products from Shopify in batches (250 max per request)
+            all_products = []
+            remaining = product_limit
+            since_id = None
+
+            while remaining > 0:
+                batch_size = min(remaining, 250)
+                logger.info(f"Fetching batch of {batch_size} products (since_id={since_id})")
+
+                with shopify_rate_limiter:
+                    products_batch = shopify_service.get_products(limit=batch_size, since_id=since_id)
+                    time.sleep(SHOPIFY_DELAY)
+
+                if not products_batch:
+                    logger.info(f"No more products to fetch. Total fetched: {len(all_products)}")
+                    break
+
+                all_products.extend(products_batch)
+                remaining -= len(products_batch)
+
+                # Update since_id for next batch (get last product ID)
+                if products_batch:
+                    since_id = products_batch[-1]['id']
+
+                logger.info(f"Fetched {len(all_products)}/{product_limit} products so far")
+
+                # If we got less than batch_size, we've reached the end
+                if len(products_batch) < batch_size:
+                    break
+
+            logger.info(f"Total products fetched: {len(all_products)}")
+            fix_shopify_progress['total'] = len(all_products)
+            fix_shopify_progress['message'] = f'Processing {len(all_products)} products...'
+
+            updated_count = 0
+
+            # Process each product
+            for idx, shopify_product in enumerate(all_products, 1):
+                # Check if cancellation was requested
+                if fix_shopify_progress.get('cancel_requested', False):
+                    fix_shopify_progress['status'] = 'cancelled'
+                    fix_shopify_progress['message'] = f'Cancelled after updating {updated_count}/{len(all_products)} products'
+                    fix_shopify_progress['cancel_requested'] = False
+                    logger.info(f"Fix operation cancelled: {updated_count}/{len(all_products)} products updated")
+                    return
+
+                try:
+                    fix_shopify_progress['current'] = idx
+                    fix_shopify_progress['message'] = f'Processing product {idx}/{len(all_products)}: {shopify_product.get("title", "Untitled")[:50]}...'
+
+                    product_id = shopify_product['id']
+                    current_title = shopify_product.get('title', '')
+                    current_body_html = shopify_product.get('body_html', '')
+
+                    logger.info(f"[{idx}/{len(all_products)}] Processing: {current_title[:80]}")
+
+                    # Prepare data for OpenAI
+                    product_data = {
+                        'title': current_title,
+                        'description': current_body_html,
+                        'body_html': current_body_html,
+                        'price': '0.00',
+                        'product_type': shopify_product.get('product_type', ''),
+                        'vendor': shopify_product.get('vendor', '')
+                    }
+
+                    # Re-process through OpenAI to remove brand names and contact info (rate-limited)
+                    with openai_rate_limiter:
+                        logger.info(f"[{idx}/{len(all_products)}] OpenAI: Cleaning product content...")
+                        enhanced_product = openai_service.enhance_product_description(product_data)
+                        time.sleep(OPENAI_DELAY)
+
+                    # Extract cleaned fields
+                    cleaned_title = enhanced_product.get('title', current_title)
+                    cleaned_body_html = enhanced_product.get('body_html', current_body_html)
+
+                    # Check if anything actually changed
+                    title_changed = cleaned_title != current_title
+                    body_changed = cleaned_body_html != current_body_html
+
+                    if not title_changed and not body_changed:
+                        logger.info(f"[{idx}/{len(all_products)}] No changes needed - skipping update")
+                        continue
+
+                    # Prepare update payload (only update changed fields)
+                    update_data = {}
+                    if title_changed:
+                        update_data['title'] = cleaned_title
+                        logger.info(f"[{idx}/{len(all_products)}] Title cleaned: {current_title[:50]}... -> {cleaned_title[:50]}...")
+                    if body_changed:
+                        update_data['body_html'] = cleaned_body_html
+                        logger.info(f"[{idx}/{len(all_products)}] Description cleaned ({len(current_body_html)} -> {len(cleaned_body_html)} chars)")
+
+                    # Update product in Shopify (rate-limited)
+                    with shopify_rate_limiter:
+                        logger.info(f"[{idx}/{len(all_products)}] Shopify: Updating product...")
+                        updated = shopify_service.update_product(product_id, update_data)
+                        time.sleep(SHOPIFY_DELAY)
+
+                    if updated:
+                        updated_count += 1
+                        fix_shopify_progress['updated_count'] = updated_count
+                        logger.info(f"[{idx}/{len(all_products)}] Product updated successfully (Total: {updated_count} updated)")
+                    else:
+                        logger.error(f"[{idx}/{len(all_products)}] Failed to update product")
+
+                except Exception as e:
+                    logger.error(f"[{idx}/{len(all_products)}] Error processing product: {str(e)}", exc_info=True)
+                    continue
+
+            # Mark as completed
+            fix_shopify_progress['status'] = 'completed'
+            fix_shopify_progress['message'] = f'Completed! Updated {updated_count}/{len(all_products)} products'
+            fix_shopify_progress['cancel_requested'] = False
+            logger.info(f"Fix operation completed: {updated_count}/{len(all_products)} products updated")
+
+        except Exception as e:
+            logger.error(f"Error in fix_shopify_products_async: {str(e)}", exc_info=True)
+            fix_shopify_progress['status'] = 'error'
+            fix_shopify_progress['message'] = f'Error: {str(e)}'
 
 
 if __name__ == '__main__':

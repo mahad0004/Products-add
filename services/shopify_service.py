@@ -301,3 +301,76 @@ class ShopifyService:
         except Exception as e:
             logger.error(f"Exception deleting product: {str(e)}")
             return False
+
+    def get_products(self, limit=250, since_id=None):
+        """
+        Get products from Shopify
+        Args:
+            limit: Number of products to retrieve (max 250 per request)
+            since_id: Get products after this ID (for pagination)
+        Returns: list of products or empty list
+        """
+        url = f"{self.base_url}/products.json"
+
+        params = {"limit": min(limit, 250)}
+        if since_id:
+            params["since_id"] = since_id
+
+        try:
+            self._rate_limit_wait()
+
+            response = requests.get(
+                url,
+                params=params,
+                headers=self._get_headers(),
+                timeout=30
+            )
+
+            if response.status_code == 200:
+                products = response.json().get('products', [])
+                logger.info(f"Retrieved {len(products)} products from Shopify")
+                return products
+            else:
+                logger.error(f"Error getting products: {response.status_code} - {response.text}")
+                return []
+
+        except Exception as e:
+            logger.error(f"Exception getting products: {str(e)}")
+            return []
+
+    def update_product(self, product_id, product_data):
+        """
+        Update a product in Shopify
+        Args:
+            product_id: Shopify product ID
+            product_data: Product data to update (only include fields you want to change)
+        Returns: updated product data or None
+        """
+        url = f"{self.base_url}/products/{product_id}.json"
+
+        try:
+            self._rate_limit_wait()
+
+            response = requests.put(
+                url,
+                json={"product": product_data},
+                headers=self._get_headers(),
+                timeout=30
+            )
+
+            if response.status_code == 200:
+                data = response.json()
+                if 'product' in data:
+                    logger.info(f"Product {product_id} updated successfully")
+                    return data['product']
+                else:
+                    logger.error(f"Status 200 but unexpected response format: {response.text[:500]}")
+                    return None
+            else:
+                logger.error(f"Error updating product: {response.status_code}")
+                logger.error(f"Response: {response.text[:500]}")
+                return None
+
+        except Exception as e:
+            logger.error(f"Exception updating product: {str(e)}")
+            return None
