@@ -59,7 +59,7 @@ class GeminiService:
         else:
             logger.info(f"🔄 Multi-key rotation enabled: {len(self.clients)} API keys loaded")
             logger.info(f"   Total capacity: {len(self.clients) * 2000} requests/day (Tier 1)")
-            logger.info(f"   Max products/day: {len(self.clients) * 1000} products (Pro Mode)")
+            logger.info(f"   Max products/day: {len(self.clients) * 2000} products (Pro Mode - 1 image per product)")
 
         # Round-robin rotation index (thread-safe)
         self._current_key_index = 0

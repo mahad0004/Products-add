@@ -1049,11 +1049,11 @@ def process_single_product(source_product, ai_job_id, fast_mode, created_counter
                     logger.error(f"[AI Job {ai_job_id}] ❌ {error_msg}")
                     return (False, error_msg)
 
-                # Image 1: Edit to main front view (rate-limited)
+                # Edit 1 professional product image (rate-limited)
                 try:
                     with gemini_rate_limiter:
-                        logger.info(f"[AI Job {ai_job_id}] 🍌 Nano Banana: Editing image 1/2 (Main front view)...")
-                        edited_url_1 = gemini_service.edit_product_image(
+                        logger.info(f"[AI Job {ai_job_id}] 🍌 Nano Banana: Editing product image (Professional view)...")
+                        edited_url = gemini_service.edit_product_image(
                             first_image.original_url,
                             source_product.title,
                             variation="main"
@@ -1066,38 +1066,13 @@ def process_single_product(source_product, ai_job_id, fast_mode, created_counter
                     raise  # Re-raise to be caught by process_ai_job_async
 
                 # CRITICAL: If Gemini fails, STOP - do NOT create product
-                if not edited_url_1:
-                    error_msg = "Gemini image editing failed for image 1/2 - SKIPPING product (no fallback allowed)"
+                if not edited_url:
+                    error_msg = "Gemini image editing failed - SKIPPING product (no fallback allowed)"
                     logger.error(f"[AI Job {ai_job_id}] ❌ {error_msg}")
                     return (False, error_msg)
 
-                ai_image_urls.append(edited_url_1)
-                logger.info(f"[AI Job {ai_job_id}] ✅ Nano Banana: Image 1/2 edited successfully")
-
-                # Image 2: Edit to top-down angled view (rate-limited)
-                try:
-                    with gemini_rate_limiter:
-                        logger.info(f"[AI Job {ai_job_id}] 🍌 Nano Banana: Editing image 2/2 (Top-down angled view)...")
-                        edited_url_2 = gemini_service.edit_product_image(
-                            first_image.original_url,
-                            source_product.title,
-                            variation="angle1"
-                        )
-                        time.sleep(GEMINI_DELAY)  # Delay after Gemini call
-                except GeminiQuotaExhaustedError as e:
-                    # Quota exhausted - propagate the error up to be handled by process_ai_job_async
-                    error_msg = f"Gemini quota exhausted: {str(e)}"
-                    logger.error(f"[AI Job {ai_job_id}] ❌ {error_msg}")
-                    raise  # Re-raise to be caught by process_ai_job_async
-
-                # CRITICAL: If Gemini fails, STOP - do NOT create product
-                if not edited_url_2:
-                    error_msg = "Gemini image editing failed for image 2/2 - SKIPPING product (no fallback allowed)"
-                    logger.error(f"[AI Job {ai_job_id}] ❌ {error_msg}")
-                    return (False, error_msg)
-
-                ai_image_urls.append(edited_url_2)
-                logger.info(f"[AI Job {ai_job_id}] ✅ Nano Banana: Image 2/2 edited successfully")
+                ai_image_urls.append(edited_url)
+                logger.info(f"[AI Job {ai_job_id}] ✅ Nano Banana: Image edited successfully")
 
                 image_prompt = f"Nano Banana edited variations of {source_product.title}"
 
