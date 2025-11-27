@@ -747,6 +747,7 @@ def create_ai_job():
         job_id = data.get('job_id')
         fast_mode = data.get('fast_mode', False)  # NEW: Skip AI image generation if True
         product_limit = data.get('product_limit')  # NEW: Limit number of products to process
+        product_offset = data.get('product_offset', 0)  # NEW: Skip first N products
 
         if not job_id:
             return jsonify({'error': 'job_id is required'}), 400
@@ -772,19 +773,21 @@ def create_ai_job():
         db.session.add(ai_job)
         db.session.commit()
 
-        logger.info(f"Created AI job {ai_job.id} for scrape job {job_id} (fast_mode={fast_mode}, product_limit={product_limit})")
+        logger.info(f"Created AI job {ai_job.id} for scrape job {job_id} (fast_mode={fast_mode}, product_limit={product_limit}, product_offset={product_offset})")
 
         # Start AI processing in background with fast_mode option
-        executor.submit(process_ai_job_async, ai_job.id, fast_mode, product_limit)
+        executor.submit(process_ai_job_async, ai_job.id, fast_mode, product_limit, product_offset)
 
         mode_message = " (FAST MODE - 1 image, no AI)" if fast_mode else f" (PRO MODE - {PARALLEL_WORKERS} parallel workers, rate-limited)"
         limit_message = f" - Testing with {product_limit} products" if product_limit else ""
+        skip_message = f" - Skipping first {product_offset} products" if product_offset else ""
         return jsonify({
-            'message': f'AI job created successfully for scrape job {job_id}{mode_message}{limit_message}',
+            'message': f'AI job created successfully for scrape job {job_id}{mode_message}{limit_message}{skip_message}',
             'ai_job_id': ai_job.id,
             'status': 'started',
             'fast_mode': fast_mode,
-            'product_limit': product_limit
+            'product_limit': product_limit,
+            'product_offset': product_offset
         })
 
     except Exception as e:
@@ -1181,13 +1184,14 @@ def process_single_product(source_product, ai_job_id, fast_mode, created_counter
             return (False, error_msg)
 
 
-def process_ai_job_async(ai_job_id, fast_mode=False, product_limit=None):
+def process_ai_job_async(ai_job_id, fast_mode=False, product_limit=None, product_offset=0):
     """Process an AI job in the background - create AI dupes for all products from scrape job
 
     Args:
         ai_job_id: The AI job ID to process
         fast_mode: If True, skip AI image generation and use placeholders (MUCH faster)
         product_limit: Optional limit on number of products to process (for testing)
+        product_offset: Skip first N products (useful for continuing from where you left off)
     """
     with app.app_context():
         try:
@@ -1213,14 +1217,22 @@ def process_ai_job_async(ai_job_id, fast_mode=False, product_limit=None):
                 db.session.commit()
                 return
 
-            # Get products (with optional limit for testing)
-            query = Product.query.filter_by(job_id=source_job.id)
+            # Get products (with optional skip and limit)
+            query = Product.query.filter_by(job_id=source_job.id).order_by(Product.id)
+
+            # Skip first N products if offset specified
+            if product_offset:
+                query = query.offset(product_offset)
+
+            # Limit to N products if specified
             if product_limit:
                 query = query.limit(product_limit)
+
             products = query.all()
 
-            limit_msg = f" (limited to {product_limit} for testing)" if product_limit else ""
-            logger.info(f"[AI Job {ai_job_id}] Found {len(products)} products to process{limit_msg}")
+            skip_msg = f" (skipped first {product_offset})" if product_offset else ""
+            limit_msg = f" (limited to {product_limit})" if product_limit else ""
+            logger.info(f"[AI Job {ai_job_id}] Found {len(products)} products to process{skip_msg}{limit_msg}")
 
             if not products:
                 logger.warning(f"[AI Job {ai_job_id}] No products found in source job")
