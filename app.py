@@ -647,9 +647,11 @@ def create_ai_dupes():
                 existing_tags = enhanced_product.get('tags', source_product.tags) or ''
                 tags_list = [tag.strip() for tag in existing_tags.split(',') if tag.strip()]
 
-                # Add source URL as a tag if provided
-                if source_url and source_url not in tags_list:
-                    tags_list.append(source_url)
+                # Add source URL as a readable tag if provided
+                if source_url:
+                    readable_tag = url_to_readable_tag(source_url)
+                    if readable_tag and readable_tag not in tags_list:
+                        tags_list.append(readable_tag)
 
                 combined_tags = ', '.join(tags_list)
 
@@ -1061,6 +1063,72 @@ def health_check():
     return jsonify({'status': 'healthy', 'service': 'shopify-automation'}), 200
 
 
+# ==================== HELPER FUNCTIONS ====================
+
+def url_to_readable_tag(url):
+    """
+    Convert a URL to a readable tag name
+
+    Examples:
+        https://streetsolutionsuk.co.uk/ -> "Street Solutions UK"
+        https://example.com -> "Example"
+        https://my-company.net -> "My Company"
+
+    Args:
+        url: The source URL
+
+    Returns:
+        str: A readable tag name
+    """
+    if not url:
+        return None
+
+    try:
+        import re
+
+        # Remove protocol (http://, https://)
+        domain = url.replace('https://', '').replace('http://', '')
+
+        # Remove trailing slash and path
+        domain = domain.split('/')[0]
+
+        # Remove www. prefix if present
+        domain = domain.replace('www.', '')
+
+        # Remove common TLDs
+        for tld in ['.com', '.co.uk', '.net', '.org', '.io', '.uk', '.us', '.ca', '.au', '.de', '.fr']:
+            if domain.endswith(tld):
+                domain = domain[:-len(tld)]
+                break
+
+        # Replace hyphens and underscores with spaces
+        domain = domain.replace('-', ' ').replace('_', ' ')
+
+        # Handle country codes at the end (uk, usa, eu, etc.)
+        # Check if last word is a short uppercase country/region code
+        parts = domain.split()
+        if parts and len(parts[-1]) <= 3 and parts[-1].lower() in ['uk', 'usa', 'us', 'eu', 'ca', 'au', 'nz', 'de', 'fr']:
+            # Keep it as uppercase
+            country_code = parts[-1].upper()
+            domain = ' '.join(parts[:-1]) + ' ' + country_code
+
+        # Insert spaces before capital letters in camelCase/PascalCase
+        # But only if there are no spaces yet
+        if ' ' not in domain:
+            # Add space before capital letters (but not at the start)
+            domain = re.sub(r'([a-z])([A-Z])', r'\1 \2', domain)
+            # Add space before numbers
+            domain = re.sub(r'([a-zA-Z])(\d)', r'\1 \2', domain)
+
+        # Capitalize each word
+        readable_name = ' '.join(word.capitalize() for word in domain.split())
+
+        return readable_name
+    except Exception as e:
+        logger.error(f"Error converting URL to tag: {str(e)}")
+        return url  # Fallback to original URL
+
+
 # ==================== WORKFLOW FUNCTIONS ====================
 
 def process_single_product(source_product, ai_job_id, fast_mode, created_counter, pushed_counter, source_url=None):
@@ -1175,9 +1243,11 @@ def process_single_product(source_product, ai_job_id, fast_mode, created_counter
             existing_tags = enhanced_product.get('tags', source_product.tags) or ''
             tags_list = [tag.strip() for tag in existing_tags.split(',') if tag.strip()]
 
-            # Add source URL as a tag if provided
-            if source_url and source_url not in tags_list:
-                tags_list.append(source_url)
+            # Add source URL as a readable tag if provided
+            if source_url:
+                readable_tag = url_to_readable_tag(source_url)
+                if readable_tag and readable_tag not in tags_list:
+                    tags_list.append(readable_tag)
 
             combined_tags = ', '.join(tags_list)
 
