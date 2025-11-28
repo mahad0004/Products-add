@@ -1,6 +1,24 @@
 """
 Google Gemini Service with Nano Banana Image Editing
 Handles Google Gemini API interactions for image generation and editing
+
+OLD PROMPT (BACKUP - PRE-SMART SCENARIO DETECTION):
+================================================================================
+This was the original industrial/construction-focused prompt before we added
+smart product category detection (furniture/lifestyle vs tools/industrial).
+
+The old prompt was heavily focused on workplace/construction scenarios with:
+- Workers in safety gear
+- Workshop/construction environments
+- Active installation and tool usage
+- Workplace signage (CAUTION, WARNING, etc.)
+
+The NEW prompt now intelligently detects product categories and chooses:
+- LIFESTYLE scenarios for furniture/outdoor/garden products (person sitting on bench in garden)
+- INDUSTRIAL scenarios for tools/equipment/construction products (worker installing/using)
+
+Original prompt sections preserved below for reference/rollback if needed.
+================================================================================
 """
 
 from google import genai
@@ -58,8 +76,19 @@ class GeminiService:
             logger.warning("⚠️ No valid Gemini API keys provided")
         else:
             logger.info(f"🔄 Multi-key rotation enabled: {len(self.clients)} API keys loaded")
-            logger.info(f"   Total capacity: {len(self.clients) * 2000} requests/day (Tier 1)")
-            logger.info(f"   Max products/day: {len(self.clients) * 2000} products (Pro Mode - 1 image per product)")
+            logger.info(f"   ")
+            logger.info(f"   ⚙️  QUOTA MANAGEMENT WORKFLOW:")
+            logger.info(f"   1️⃣  Use Key 1 (2,000 requests) until quota exhausted")
+            if len(self.clients) > 1:
+                for i in range(2, len(self.clients) + 1):
+                    logger.info(f"   {i}️⃣  Switch to Key {i} (2,000 requests) until quota exhausted")
+            logger.info(f"   ⏸️  When ALL keys exhausted → Auto-pause processing")
+            logger.info(f"   💤 Wait until midnight Pacific Time (quota resets)")
+            logger.info(f"   ▶️  Auto-resume processing with fresh quota")
+            logger.info(f"   ")
+            logger.info(f"   📊 Each key: 2,000 requests/day (Tier 1)")
+            logger.info(f"   📊 Total keys: {len(self.clients)} keys = Up to {len(self.clients) * 2000} requests per day cycle")
+            logger.info(f"   📊 Products: {len(self.clients) * 2000} products/day (Pro Mode - 1 image per product)")
 
         # Round-robin rotation index (thread-safe)
         self._current_key_index = 0
@@ -207,6 +236,23 @@ class GeminiService:
             # Get variation-specific edit instructions
             edit_instructions = self._get_edit_instructions(variation)
 
+            # Detect product category for smart scenario selection
+            product_lower = product_title.lower()
+            is_furniture = any(keyword in product_lower for keyword in [
+                'bench', 'chair', 'seat', 'table', 'sofa', 'couch', 'stool', 'furniture',
+                'lounger', 'hammock', 'swing', 'gazebo', 'pergola', 'planter', 'pot'
+            ])
+            is_outdoor_lifestyle = any(keyword in product_lower for keyword in [
+                'garden', 'outdoor', 'patio', 'deck', 'bbq', 'grill', 'fire pit',
+                'umbrella', 'parasol', 'fountain', 'statue', 'ornament'
+            ])
+
+            # Choose appropriate scenario based on product type
+            if is_furniture or is_outdoor_lifestyle:
+                scenario_type = "LIFESTYLE"
+            else:
+                scenario_type = "INDUSTRIAL"
+
             # Create edit prompt
             edit_prompt = f"""You are a professional lifestyle product photographer. Transform this product image into a compelling, real-world application photograph showing the product in use.
 
@@ -214,58 +260,41 @@ PRODUCT: {product_title}
 
 {edit_instructions}
 
-🎯 LIFESTYLE PHOTOGRAPHY OBJECTIVE:
-Create a REALISTIC, professional photograph showing this product being used in its INTENDED REAL-WORLD APPLICATION with appropriate people, environment, or workplace setting.
+🎯 PHOTOGRAPHY OBJECTIVE:
+Create a REALISTIC, professional photograph showing this product being used in its INTENDED REAL-WORLD APPLICATION.
 
-👤 HUMAN INTERACTION (When Applicable):
-1. Show a professional worker, craftsman, or user actively using or interacting with the product
-2. Person should be dressed appropriately for the product's use case:
-   - Construction/Industrial products: Worker in safety gear, hard hat, work clothes
-   - Tools/Equipment: Tradesperson in work attire using the product
-   - Office/Tech products: Professional in business casual
-   - Home/DIY products: Casual user in appropriate setting
-3. Focus on HANDS and product interaction - show product being held, installed, or operated
-4. Person's face can be partially visible or out of focus (focus stays on product)
-5. Natural, authentic body language and realistic usage posture
+SCENARIO TYPE: {scenario_type}
+
+👤 HUMAN INTERACTION:
+{"LIFESTYLE SCENARIO - Natural, Relaxed Usage:" if scenario_type == "LIFESTYLE" else "ACTIVE USE SCENARIO - Installation/Operation:"}
+{"- Show person naturally using or enjoying the product (sitting, relaxing, etc.)" if scenario_type == "LIFESTYLE" else "- Show professional worker, craftsman, or user actively installing or operating the product"}
+{"- Person dressed casually and comfortably for the setting" if scenario_type == "LIFESTYLE" else "- Person dressed appropriately (safety gear, work clothes, etc.)"}
+{"- Natural, relaxed posture - enjoying the product" if scenario_type == "LIFESTYLE" else "- Focus on HANDS and product interaction - holding, installing, operating"}
+{"- Person can be partially visible or in background" if scenario_type == "LIFESTYLE" else "- Person's face can be partially visible or out of focus"}
+{"- Authentic lifestyle moment captured naturally" if scenario_type == "LIFESTYLE" else "- Natural, authentic body language and realistic usage posture"}
 
 🏗️ ENVIRONMENT & SETTING:
-1. Choose the MOST APPROPRIATE real-world setting for this product:
-   - Construction products: Job site, construction area, workshop
-   - Industrial equipment: Factory floor, warehouse, industrial setting
-   - Tools: Workshop, garage, workbench with other tools nearby
-   - Safety equipment: Active work environment showing its protective use
-   - Office products: Modern office, desk setup
-   - Home products: Residential setting, home workshop
-
-2. Include relevant environmental context:
-   - Other related equipment or materials in background (blurred)
-   - Authentic workplace surfaces (concrete, metal workbench, wood, etc.)
-   - Natural work environment lighting
-   - Realistic clutter or workspace organization
-
-3. Add REALISTIC environmental signage for authenticity:
-   ✅ Safety signs visible in background: "CAUTION", "DANGER", "WARNING"
-   ✅ Directional or informational signs: "EXIT", "FIRE EXTINGUISHER"
-   ✅ Safety notices on walls or equipment (generic, not branded)
-   ✅ Measurement markings on tools or surfaces
-   ✅ Generic workplace posters (safety procedures, emergency info)
-   - These make the environment look REAL and professional
-   - NO company names or logos on signs
+{"LIFESTYLE SETTING - Beautiful, Natural Environment:" if scenario_type == "LIFESTYLE" else "WORKPLACE SETTING - Authentic Work Environment:"}
+{"- Outdoor garden, patio, deck, backyard, or beautiful home setting" if scenario_type == "LIFESTYLE" else "- Job site, workshop, garage, construction area, or workplace"}
+{"- Lush greenery, flowers, natural landscaping in background (softly blurred)" if scenario_type == "LIFESTYLE" else "- Work surfaces, tools, equipment, materials in background (blurred)"}
+{"- Natural sunlight, golden hour lighting, or soft outdoor illumination" if scenario_type == "LIFESTYLE" else "- Workshop lighting, natural daylight, or work environment lighting"}
+{"- Well-maintained, inviting outdoor or home environment" if scenario_type == "LIFESTYLE" else "- Realistic workplace with authentic surfaces (concrete, metal, wood)"}
+{"- NO workplace signage needed - pure lifestyle aesthetic" if scenario_type == "LIFESTYLE" else "- Optional: Safety signs in background (CAUTION, WARNING, EXIT) for authenticity"}
 
 📸 PROFESSIONAL PHOTOGRAPHY QUALITY:
-1. Photorealistic, looks like actual documentary-style product photography
-2. Natural lighting appropriate to the environment (workshop lighting, outdoor light, etc.)
-3. Shallow depth of field - product and hands in sharp focus, background slightly blurred
+1. Photorealistic, looks like actual {"lifestyle magazine" if scenario_type == "LIFESTYLE" else "documentary-style"} product photography
+2. Natural lighting appropriate to the environment
+3. Shallow depth of field - product and person in focus, background beautifully blurred
 4. Professional color grading with authentic, natural tones
-5. Dynamic composition showing action, movement, or active use
-6. Camera angle: Eye-level or slightly above, showing both product and usage context
+5. {"Inviting, aspirational composition showing desirable lifestyle" if scenario_type == "LIFESTYLE" else "Dynamic composition showing action, movement, or active use"}
+6. Camera angle: Eye-level or slightly above, showing product in perfect context
 
 🎨 REALISM & AUTHENTICITY:
 1. Must look like a REAL PHOTOGRAPH, not CGI or artificial
-2. Natural wear patterns, realistic textures, authentic materials
-3. Genuine work environment - NOT overly clean or staged
+2. Natural textures, authentic materials
+3. {"Beautiful, well-maintained environment - NOT overly perfect, naturally inviting" if scenario_type == "LIFESTYLE" else "Genuine work environment - NOT overly clean or staged"}
 4. Realistic lighting with natural shadows
-5. Authentic product proportions and scale relative to human hands/body
+5. Authentic product proportions and scale relative to human body
 
 🚫 BRAND & LOGO REMOVAL - CRITICAL:
 1. Remove ALL text from the PRODUCT itself:
