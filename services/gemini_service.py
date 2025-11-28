@@ -97,22 +97,38 @@ class GeminiService:
     def _get_next_client(self):
         """
         Get the next client in round-robin rotation (thread-safe)
-        Returns: (client, key_name) tuple
+        Skips keys that have exhausted their quota
+        Returns: (client, key_name) tuple or (None, None) if all keys exhausted
         """
         if not self.clients:
             return None, None
 
         with self._rotation_lock:
-            client = self.clients[self._current_key_index]
-            key_name = self.key_names[self._current_key_index]
+            # Try to find a non-exhausted key
+            attempts = 0
+            max_attempts = len(self.clients)
 
-            # Increment usage counter
-            self.usage_counts[key_name] = self.usage_counts.get(key_name, 0) + 1
+            while attempts < max_attempts:
+                client = self.clients[self._current_key_index]
+                key_name = self.key_names[self._current_key_index]
 
-            # Move to next key for next request
-            self._current_key_index = (self._current_key_index + 1) % len(self.clients)
+                # Move to next key for next request
+                self._current_key_index = (self._current_key_index + 1) % len(self.clients)
 
-            return client, key_name
+                # Check if this key is exhausted
+                if not self.quota_exhausted.get(key_name, False):
+                    # Increment usage counter
+                    self.usage_counts[key_name] = self.usage_counts.get(key_name, 0) + 1
+                    logger.debug(f"✅ Using [{key_name}] - {self.usage_counts[key_name]} requests so far")
+                    return client, key_name
+
+                # This key is exhausted, try next one
+                logger.debug(f"⏭️  Skipping [{key_name}] - quota exhausted")
+                attempts += 1
+
+            # All keys are exhausted
+            logger.error(f"❌ ALL {len(self.clients)} API keys have exhausted their quota")
+            return None, None
 
     def get_usage_stats(self):
         """
@@ -192,52 +208,73 @@ class GeminiService:
             edit_instructions = self._get_edit_instructions(variation)
 
             # Create edit prompt
-            edit_prompt = f"""You are a professional product photographer. Edit this product image to create an ultra-realistic, professional e-commerce photograph.
+            edit_prompt = f"""You are a professional lifestyle product photographer. Transform this product image into a compelling, real-world application photograph showing the product in use.
 
 PRODUCT: {product_title}
 
 {edit_instructions}
 
-🎨 ULTRA-REALISTIC PROFESSIONAL PHOTOGRAPHY REQUIREMENTS:
+🎯 LIFESTYLE PHOTOGRAPHY OBJECTIVE:
+Create a REALISTIC, professional photograph showing this product being used in its INTENDED REAL-WORLD APPLICATION with appropriate people, environment, or workplace setting.
 
-1. PHOTOREALISM - Make it look like a real photograph taken by a professional photographer:
-   - Natural, realistic textures and materials
-   - Accurate lighting with soft shadows and natural highlights
-   - Proper depth of field with slight background blur
-   - Professional color grading (not oversaturated, natural tones)
-   - Studio-quality composition and framing
+👤 HUMAN INTERACTION (When Applicable):
+1. Show a professional worker, craftsman, or user actively using or interacting with the product
+2. Person should be dressed appropriately for the product's use case:
+   - Construction/Industrial products: Worker in safety gear, hard hat, work clothes
+   - Tools/Equipment: Tradesperson in work attire using the product
+   - Office/Tech products: Professional in business casual
+   - Home/DIY products: Casual user in appropriate setting
+3. Focus on HANDS and product interaction - show product being held, installed, or operated
+4. Person's face can be partially visible or out of focus (focus stays on product)
+5. Natural, authentic body language and realistic usage posture
 
-2. PROFESSIONAL QUALITY:
-   - Ultra-sharp focus on the product
-   - High resolution, crisp details
-   - Clean, professional presentation
-   - Perfect product exposure (not too bright, not too dark)
-   - Natural reflections and surface details
+🏗️ ENVIRONMENT & SETTING:
+1. Choose the MOST APPROPRIATE real-world setting for this product:
+   - Construction products: Job site, construction area, workshop
+   - Industrial equipment: Factory floor, warehouse, industrial setting
+   - Tools: Workshop, garage, workbench with other tools nearby
+   - Safety equipment: Active work environment showing its protective use
+   - Office products: Modern office, desk setup
+   - Home products: Residential setting, home workshop
+2. Include relevant environmental context:
+   - Other related equipment or materials in background (blurred)
+   - Authentic workplace surfaces (concrete, metal workbench, wood, etc.)
+   - Natural work environment lighting
+   - Realistic clutter or workspace organization
 
-3. BACKGROUND:
-   - Clean, minimal background (white, light gray, or subtle gradient)
-   - NO distracting elements or patterns
-   - Professional studio backdrop appearance
-   - Seamless background-to-product transition
+📸 PROFESSIONAL PHOTOGRAPHY QUALITY:
+1. Photorealistic, looks like actual documentary-style product photography
+2. Natural lighting appropriate to the environment (workshop lighting, outdoor light, etc.)
+3. Shallow depth of field - product and hands in sharp focus, background slightly blurred
+4. Professional color grading with authentic, natural tones
+5. Dynamic composition showing action, movement, or active use
+6. Camera angle: Eye-level or slightly above, showing both product and usage context
+
+🎨 REALISM & AUTHENTICITY:
+1. Must look like a REAL PHOTOGRAPH, not CGI or artificial
+2. Natural wear patterns, realistic textures, authentic materials
+3. Genuine work environment - NOT overly clean or staged
+4. Realistic lighting with natural shadows
+5. Authentic product proportions and scale relative to human hands/body
 
 🚫 ABSOLUTELY NO TEXT OR BRANDING - CRITICAL:
-1. Remove ALL text: letters, numbers, words, symbols, logos, brand names, labels, watermarks, tags
-2. Remove ALL company names, manufacturer marks, model numbers, serial numbers
-3. Replace text areas with CLEAN, BLANK surfaces that match the product's material and color
-4. If there are labels or stickers, replace with plain solid-color matching surfaces
-5. The product must be COMPLETELY TEXT-FREE and BRAND-FREE
-6. No visible typography or written characters of ANY kind anywhere in the image
-7. Product surface should be clean and unmarked where text was removed
+1. Remove ALL text from product: brand names, model numbers, labels, markings
+2. Remove ALL text from environment: signs, posters, labels on other items
+3. Remove company names, logos, manufacturer marks
+4. Replace text areas with CLEAN surfaces matching the product's material
+5. Remove any visible typography anywhere in the entire image
+6. Product must be completely TEXT-FREE and BRAND-FREE
+7. Background items should also be text-free
 
-✅ WHAT TO PRESERVE:
-1. Keep the EXACT SAME PRODUCT - only change angle, lighting, and background
-2. DO NOT change product shape, design, structure, or physical features
-3. Maintain accurate product colors and materials
-4. Keep product dimensions and proportions identical
-5. Preserve all product features except text/branding
+✅ WHAT TO SHOW:
+1. Product in ACTIVE USE or being handled/installed
+2. Appropriate human interaction (hands holding, using, installing)
+3. Real-world application environment
+4. Natural, realistic usage scenario
+5. Professional, engaging composition that tells a story
 
 🎯 FINAL RESULT:
-A photorealistic, professional product photograph that looks like it was shot in a high-end photography studio - clean, sharp, professional, and completely text-free."""
+A compelling, photorealistic lifestyle image showing the product being used in its intended real-world application, with appropriate human interaction and environment - professional, authentic, engaging, and completely text-free."""
 
             logger.info(f"Nano Banana edit prompt: {edit_prompt[:120]}...")
 
@@ -251,6 +288,17 @@ A photorealistic, professional product photograph that looks like it was shot in
             # Access parts through response.candidates[0].content.parts
             if response.candidates and len(response.candidates) > 0:
                 candidate = response.candidates[0]
+
+                # Check finish_reason for content safety issues
+                if hasattr(candidate, 'finish_reason'):
+                    finish_reason = str(candidate.finish_reason)
+                    if 'SAFETY' in finish_reason or 'RECITATION' in finish_reason or 'BLOCKED' in finish_reason:
+                        logger.warning(f"⚠️ Nano Banana [{key_name}]: Image rejected by safety filters - {finish_reason}")
+                        logger.warning(f"   Product: {product_title}")
+                        logger.warning(f"   Likely cause: Brand logos, text, or copyrighted content detected in source image")
+                        logger.warning(f"   Skipping this product (no edited image available)")
+                        return None
+
                 if hasattr(candidate, 'content') and hasattr(candidate.content, 'parts'):
                     for part in candidate.content.parts:
                         if hasattr(part, 'inline_data') and part.inline_data is not None:
@@ -264,8 +312,9 @@ A photorealistic, professional product photograph that looks like it was shot in
                             logger.info(f"✅ Nano Banana [{key_name}]: Successfully edited image (variation: {variation})")
                             return data_url
 
-            logger.error("No edited image data found in Nano Banana response")
-            logger.error(f"Response structure: {dir(response)}")
+            logger.error(f"❌ No edited image data found in Nano Banana response for: {product_title}")
+            logger.error(f"   This usually means the source image was rejected by safety filters")
+            logger.error(f"   Common causes: Brand logos, prominent text, or copyrighted imagery")
             return None
 
         except Exception as e:
@@ -273,20 +322,29 @@ A photorealistic, professional product photograph that looks like it was shot in
 
             # Check if this is a quota exhaustion error
             if "429" in error_str or "RESOURCE_EXHAUSTED" in error_str or "Quota exceeded" in error_str:
-                logger.error(f"❌ [{key_name}] QUOTA EXHAUSTED for {product_title}")
-                logger.error(f"   Error: {error_str}")
+                logger.warning(f"⚠️ [{key_name}] QUOTA EXHAUSTED for {product_title}")
+                logger.warning(f"   Error: {error_str}")
 
                 # Mark this key as quota exhausted
                 self.quota_exhausted[key_name] = True
 
-                # Calculate time until quota reset
-                seconds_until_reset, reset_time = self._calculate_quota_reset_time()
+                # Check if ALL keys are exhausted
+                if self.are_all_keys_exhausted():
+                    # Calculate time until quota reset
+                    seconds_until_reset, reset_time = self._calculate_quota_reset_time()
 
-                # Raise custom exception
-                raise GeminiQuotaExhaustedError(
-                    f"Gemini API quota exhausted. Quota resets at {reset_time.strftime('%Y-%m-%d %H:%M:%S %Z')}",
-                    reset_time=reset_time
-                )
+                    logger.error(f"❌ ALL {len(self.clients)} API KEYS EXHAUSTED!")
+
+                    # Raise custom exception only when ALL keys are exhausted
+                    raise GeminiQuotaExhaustedError(
+                        f"Gemini API quota exhausted. Quota resets at {reset_time.strftime('%Y-%m-%d %H:%M:%S %Z')}",
+                        reset_time=reset_time
+                    )
+                else:
+                    # Some keys still available - return None to try again with next key
+                    remaining_keys = sum(1 for exhausted in self.quota_exhausted.values() if not exhausted)
+                    logger.info(f"📊 {remaining_keys}/{len(self.clients)} API keys still available - continuing with next key")
+                    return None
 
             # Other errors
             logger.error(f"❌ Error editing image with Nano Banana: {error_str}")
@@ -370,20 +428,29 @@ A photorealistic, professional product photograph that looks like it was shot in
 
             # Check if this is a quota exhaustion error
             if "429" in error_str or "RESOURCE_EXHAUSTED" in error_str or "Quota exceeded" in error_str:
-                logger.error(f"❌ [{key_name}] QUOTA EXHAUSTED for {product_title}")
-                logger.error(f"   Error: {error_str}")
+                logger.warning(f"⚠️ [{key_name}] QUOTA EXHAUSTED for {product_title}")
+                logger.warning(f"   Error: {error_str}")
 
                 # Mark this key as quota exhausted
                 self.quota_exhausted[key_name] = True
 
-                # Calculate time until quota reset
-                seconds_until_reset, reset_time = self._calculate_quota_reset_time()
+                # Check if ALL keys are exhausted
+                if self.are_all_keys_exhausted():
+                    # Calculate time until quota reset
+                    seconds_until_reset, reset_time = self._calculate_quota_reset_time()
 
-                # Raise custom exception
-                raise GeminiQuotaExhaustedError(
-                    f"Gemini API quota exhausted. Quota resets at {reset_time.strftime('%Y-%m-%d %H:%M:%S %Z')}",
-                    reset_time=reset_time
-                )
+                    logger.error(f"❌ ALL {len(self.clients)} API KEYS EXHAUSTED!")
+
+                    # Raise custom exception only when ALL keys are exhausted
+                    raise GeminiQuotaExhaustedError(
+                        f"Gemini API quota exhausted. Quota resets at {reset_time.strftime('%Y-%m-%d %H:%M:%S %Z')}",
+                        reset_time=reset_time
+                    )
+                else:
+                    # Some keys still available - return None to try again with next key
+                    remaining_keys = sum(1 for exhausted in self.quota_exhausted.values() if not exhausted)
+                    logger.info(f"📊 {remaining_keys}/{len(self.clients)} API keys still available - continuing with next key")
+                    return None
 
             # Other errors
             logger.error(f"Error generating image with Nano Banana: {error_str}")
@@ -555,66 +622,64 @@ Return ONLY the ultra-detailed image generation prompt, no additional text."""
         """
         instructions = {
             "main": """
-📸 IMAGE 1 SPECIFICATION - DIRECT FRONT VIEW (STRAIGHT-ON):
+📸 LIFESTYLE IMAGE - IN-USE SCENARIO:
 
-🎯 CAMERA ANGLE & COMPOSITION:
-- DIRECT front-facing view at EXACT EYE LEVEL (0° tilt, 0° rotation)
-- Camera positioned STRAIGHT-ON, perpendicular to product's front face
-- Product PERFECTLY CENTERED in frame
-- Show ONLY the FRONT FACE - no sides, no depth, no 3D perspective
-- Completely FLAT, 2D-style presentation (like a catalog shot)
-- Fill 80% of frame with product
-- Eye-level horizontal alignment - NOT from above or below
+🎯 SCENE SETUP:
+- Show the product being ACTIVELY USED in its primary application
+- Include human hands holding, operating, or installing the product
+- Person dressed appropriately for the product's use case
+- Camera at eye-level or slightly above, capturing both product and user interaction
 
-💡 LIGHTING STYLE:
-- Bright, even, SOFT DIFFUSED lighting from directly in front
-- NO harsh shadows - completely shadow-free or minimal soft shadows
-- High-key, bright exposure (slightly overexposed for clean look)
-- Pure white or very light gray seamless background
-- Professional studio softbox lighting setup
-- Bright, airy, clean aesthetic
+👤 HUMAN ELEMENT:
+- Professional worker or tradesperson using the product
+- Focus on HANDS and product - face can be blurred or partially visible
+- Natural grip, authentic usage posture
+- Gloved hands if appropriate for safety equipment
+- Realistic body position for the task
 
-📐 PERSPECTIVE:
-- ZERO perspective distortion
-- FLAT, orthographic-style view
-- NO depth or 3D dimensionality visible
-- Product appears as if photographed head-on for a technical manual
+🏗️ ENVIRONMENT:
+- Authentic workplace or application setting (workshop, construction site, garage, etc.)
+- Include relevant context: workbench, other tools, materials in background (blurred)
+- Natural work environment surfaces and textures
+- Realistic lighting for the setting (workshop lights, natural daylight, etc.)
 
-🎯 FINAL RESULT: Ultra-clean, bright, direct front view with no angle - professional catalog-style product photography
+📸 COMPOSITION:
+- Product and hands in SHARP FOCUS
+- Background slightly blurred (shallow depth of field)
+- Dynamic angle showing action and engagement
+- Professional color grading with natural, realistic tones
+- Show the product solving a real problem or being used for its intended purpose
+
+🎯 MOOD: Professional, authentic, action-oriented, showing real-world application
 """,
             "angle1": """
-📸 IMAGE 2 SPECIFICATION - TOP-DOWN ANGLED VIEW (BIRD'S EYE):
+📸 LIFESTYLE IMAGE - INSTALLATION/SETUP VIEW:
 
-🎯 CAMERA ANGLE & COMPOSITION:
-- Camera positioned HIGH ABOVE product, looking DOWN at steep 60-70° angle from vertical
-- BIRD'S EYE VIEW / TOP-DOWN perspective
-- Show BOTH the TOP SURFACE and FRONT FACE simultaneously
-- This creates DRAMATIC 3D DEPTH and dimensionality
-- Product positioned at 45° rotation to camera (shows corner/edge)
-- Fill 70% of frame showing full 3D structure
-- COMPLETELY DIFFERENT from Image 1 - this is an angled, dimensional view
+🎯 SCENE SETUP:
+- Show the product being INSTALLED, SET UP, or PREPARED for use
+- Different angle from main image - focus on preparation or assembly
+- Include human hands positioning, adjusting, or working with the product
+- Camera angle from side or three-quarter view
 
-💡 LIGHTING STYLE:
-- Dramatic SIDE LIGHTING from 90° angle (strong directional light)
-- Creates DISTINCT shadows and highlights showing product depth
-- Medium contrast (not too bright, shows texture and dimension)
-- Light gray or subtle gradient background
-- Single key light from side creates depth and drama
-- Slightly darker than Image 1 to emphasize 3D form
+👤 HUMAN ELEMENT:
+- Show hands positioning, measuring, or installing the product
+- Person preparing the product for use or adjusting settings
+- Different hand position/grip than main image
+- Tool usage if applicable (wrench, screwdriver, etc.)
 
-📐 PERSPECTIVE:
-- STRONG perspective distortion showing depth
-- 3D dimensional view showing height, width, AND depth
-- Visible TOP, FRONT, and potentially SIDE surfaces
-- Product corners and edges clearly visible
-- Shows product as a three-dimensional object
+🏗️ ENVIRONMENT:
+- Same or similar authentic work environment
+- Show preparation surface: workbench, floor, mounting location
+- Include installation context (mounting brackets, screws, other materials)
+- Different environmental angle than main image
 
-⚡ KEY DIFFERENCE FROM IMAGE 1:
-- Image 1 = Flat, straight-on, bright, no shadows, 2D appearance
-- Image 2 = Angled, top-down, dramatic shadows, 3D appearance
-- These must look like TWO COMPLETELY DIFFERENT PHOTOGRAPHS
+📸 COMPOSITION:
+- Side angle or three-quarter view showing different product perspective
+- Hands and product interaction from different angle
+- Background with relevant work environment details (blurred)
+- Shows a DIFFERENT MOMENT in the product's use cycle than main image
 
-🎯 FINAL RESULT: Dramatic top-down angled view showing full 3D structure with depth and dimension - looks TOTALLY DIFFERENT from Image 1
+🎯 MOOD: Professional setup/installation scenario, showing product versatility and ease of use
 """,
             "angle2": """
 EDIT INSTRUCTIONS (Side/Three-Quarter View):
