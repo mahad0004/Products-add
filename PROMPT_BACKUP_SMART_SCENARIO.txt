@@ -1,0 +1,165 @@
+================================================================================
+BACKUP: SMART SCENARIO DETECTION PROMPT (Pre Two-Image Update)
+================================================================================
+Date: 2025-11-29
+Purpose: Backup of the smart product category detection system before
+         implementing the two-image approach (product-in-use + installation)
+
+================================================================================
+SMART SCENARIO DETECTION LOGIC:
+================================================================================
+
+Product Keywords Detection:
+- LIFESTYLE: bench, chair, seat, table, sofa, couch, stool, furniture, lounger,
+             hammock, swing, gazebo, pergola, planter, pot, garden, outdoor,
+             patio, deck, bbq, grill, fire pit, umbrella, parasol, fountain,
+             statue, ornament
+
+- INDUSTRIAL: All other products (tools, equipment, safety gear, etc.)
+
+================================================================================
+IMAGE PROMPT (LIFESTYLE SCENARIO):
+================================================================================
+
+You are a professional lifestyle product photographer. Transform this product
+image into a compelling, real-world application photograph showing the product
+in use.
+
+PRODUCT: {product_title}
+
+{edit_instructions}
+
+🎯 PHOTOGRAPHY OBJECTIVE:
+Create a REALISTIC, professional photograph showing this product being used in
+its INTENDED REAL-WORLD APPLICATION.
+
+SCENARIO TYPE: LIFESTYLE
+
+👤 HUMAN INTERACTION:
+LIFESTYLE SCENARIO - Natural, Relaxed Usage:
+- Show person naturally using or enjoying the product (sitting, relaxing, etc.)
+- Person dressed casually and comfortably for the setting
+- Natural, relaxed posture - enjoying the product
+- Person can be partially visible or in background
+- Authentic lifestyle moment captured naturally
+
+🏗️ ENVIRONMENT & SETTING:
+LIFESTYLE SETTING - Beautiful, Natural Environment:
+- Outdoor garden, patio, deck, backyard, or beautiful home setting
+- Lush greenery, flowers, natural landscaping in background (softly blurred)
+- Natural sunlight, golden hour lighting, or soft outdoor illumination
+- Well-maintained, inviting outdoor or home environment
+- NO workplace signage needed - pure lifestyle aesthetic
+
+📸 PROFESSIONAL PHOTOGRAPHY QUALITY:
+1. Photorealistic, looks like actual lifestyle magazine product photography
+2. Natural lighting appropriate to the environment
+3. Shallow depth of field - product and person in focus, background beautifully
+   blurred
+4. Professional color grading with authentic, natural tones
+5. Inviting, aspirational composition showing desirable lifestyle
+6. Camera angle: Eye-level or slightly above, showing product in perfect context
+
+🎨 REALISM & AUTHENTICITY:
+1. Must look like a REAL PHOTOGRAPH, not CGI or artificial
+2. Natural textures, authentic materials
+3. Beautiful, well-maintained environment - NOT overly perfect, naturally inviting
+4. Realistic lighting with natural shadows
+5. Authentic product proportions and scale relative to human body
+
+================================================================================
+IMAGE PROMPT (INDUSTRIAL SCENARIO):
+================================================================================
+
+You are a professional lifestyle product photographer. Transform this product
+image into a compelling, real-world application photograph showing the product
+in use.
+
+PRODUCT: {product_title}
+
+{edit_instructions}
+
+🎯 PHOTOGRAPHY OBJECTIVE:
+Create a REALISTIC, professional photograph showing this product being used in
+its INTENDED REAL-WORLD APPLICATION.
+
+SCENARIO TYPE: INDUSTRIAL
+
+👤 HUMAN INTERACTION:
+ACTIVE USE SCENARIO - Installation/Operation:
+- Show professional worker, craftsman, or user actively installing or operating
+  the product
+- Person dressed appropriately (safety gear, work clothes, etc.)
+- Focus on HANDS and product interaction - holding, installing, operating
+- Person's face can be partially visible or out of focus
+- Natural, authentic body language and realistic usage posture
+
+🏗️ ENVIRONMENT & SETTING:
+WORKPLACE SETTING - Authentic Work Environment:
+- Job site, workshop, garage, construction area, or workplace
+- Work surfaces, tools, equipment, materials in background (blurred)
+- Workshop lighting, natural daylight, or work environment lighting
+- Realistic workplace with authentic surfaces (concrete, metal, wood)
+- Optional: Safety signs in background (CAUTION, WARNING, EXIT) for authenticity
+
+📸 PROFESSIONAL PHOTOGRAPHY QUALITY:
+1. Photorealistic, looks like actual documentary-style product photography
+2. Natural lighting appropriate to the environment
+3. Shallow depth of field - product and person in focus, background beautifully
+   blurred
+4. Professional color grading with authentic, natural tones
+5. Dynamic composition showing action, movement, or active use
+6. Camera angle: Eye-level or slightly above, showing product in perfect context
+
+🎨 REALISM & AUTHENTICITY:
+1. Must look like a REAL PHOTOGRAPH, not CGI or artificial
+2. Natural textures, authentic materials
+3. Genuine work environment - NOT overly clean or staged
+4. Realistic lighting with natural shadows
+5. Authentic product proportions and scale relative to human body
+
+================================================================================
+BRAND & LOGO REMOVAL (SAME FOR BOTH SCENARIOS):
+================================================================================
+
+🚫 BRAND & LOGO REMOVAL - CRITICAL:
+1. Remove ALL text from the PRODUCT itself:
+   - Brand names, model numbers, manufacturer marks, logos
+   - Product labels, serial numbers, company names
+   - Replace with CLEAN surfaces matching the product's material
+   - The product must be completely TEXT-FREE and BRAND-FREE
+
+2. KEEP realistic environmental text for authenticity:
+   ✅ KEEP: Safety signs ("DANGER", "CAUTION", "WARNING", "SAFETY FIRST")
+   ✅ KEEP: Directional signs ("EXIT", "ENTRANCE", "UP", "DOWN")
+   ✅ KEEP: Generic workplace signage ("FIRE EXTINGUISHER", "FIRST AID")
+   ✅ KEEP: Measurement markings on tools or rulers in background
+   ✅ KEEP: Generic instructional text on equipment
+
+3. REMOVE from environment:
+   ❌ REMOVE: Company names, business logos, brand names
+   ❌ REMOVE: Specific company signage or branded posters
+   ❌ REMOVE: Manufacturer logos on background equipment
+   ❌ REMOVE: Phone numbers, websites, email addresses
+
+4. Environmental text should be:
+   - Generic and universal (not company-specific)
+   - Safety-oriented or functional
+   - Realistic for the work environment
+   - Not promotional or branded
+
+✅ WHAT TO SHOW:
+1. Product in ACTIVE USE or being handled/installed
+2. Appropriate human interaction (hands holding, using, installing)
+3. Real-world application environment
+4. Natural, realistic usage scenario
+5. Professional, engaging composition that tells a story
+
+🎯 FINAL RESULT:
+A compelling, photorealistic lifestyle image showing the product being used in
+its intended real-world application, with appropriate human interaction and
+environment - professional, authentic, engaging, and completely text-free.
+
+================================================================================
+END OF BACKUP
+================================================================================

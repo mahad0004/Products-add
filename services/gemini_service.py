@@ -88,7 +88,7 @@ class GeminiService:
             logger.info(f"   ")
             logger.info(f"   📊 Each key: 2,000 requests/day (Tier 1)")
             logger.info(f"   📊 Total keys: {len(self.clients)} keys = Up to {len(self.clients) * 2000} requests per day cycle")
-            logger.info(f"   📊 Products: {len(self.clients) * 2000} products/day (Pro Mode - 1 image per product)")
+            logger.info(f"   📊 Products: {len(self.clients) * 1000} products/day (Pro Mode - 2 images per product)")
 
         # Round-robin rotation index (thread-safe)
         self._current_key_index = 0
@@ -667,101 +667,114 @@ Return ONLY the ultra-detailed image generation prompt, no additional text."""
 
     def _get_edit_instructions(self, variation):
         """
-        Get image editing instructions for creating variations
-        These preserve the original product but change angle and lighting
+        Get image editing instructions for creating TWO images per product
 
         Args:
-            variation: Type of variation ("main", "angle1", "angle2")
+            variation: Type of variation ("product_in_use", "installation")
 
         Returns:
             str: Editing instructions
         """
         instructions = {
-            "main": """
-📸 LIFESTYLE IMAGE - IN-USE SCENARIO:
+            "product_in_use": """
+📸 IMAGE 1: PRODUCT IN USE (CLEAN, PROFESSIONAL, NO WORKERS)
 
-🎯 SCENE SETUP:
-- Show the product being ACTIVELY USED in its primary application
-- Include human hands holding, operating, or installing the product
-- Person dressed appropriately for the product's use case
-- Camera at eye-level or slightly above, capturing both product and user interaction
+🎯 OBJECTIVE:
+Create a clean, professional product image showing the product in its intended use ALREADY INSTALLED and functioning as designed.
 
-👤 HUMAN ELEMENT:
-- Professional worker or tradesperson using the product
-- Focus on HANDS and product - face can be blurred or partially visible
-- Natural grip, authentic usage posture
-- Gloved hands if appropriate for safety equipment
-- Realistic body position for the task
+⚠️ CRITICAL: NO WORKERS, NO HANDS, NO TOOLS visible in this image.
 
-🏗️ ENVIRONMENT:
-- Authentic workplace or application setting (workshop, construction site, garage, etc.)
-- Include relevant context: workbench, other tools, materials in background (blurred)
-- Natural work environment surfaces and textures
-- Realistic lighting for the setting (workshop lights, natural daylight, etc.)
-- ADD realistic environmental signage: safety signs ("CAUTION", "WARNING"), directional signs, generic workplace notices
-- Signs should be visible but blurred in background for authenticity
-- NO company logos or brand names on signs - keep them generic
+🔧 PRODUCT PRESENTATION:
+- Show the product ALREADY INSTALLED and in use
+- Product functioning as designed in its final, installed state
+- Clean, professional presentation
+- Product should look like it's being used, but WITHOUT people visibly interacting with it
+
+🌍 ENVIRONMENT & CONTEXT:
+- Realistic environment relevant to the product
+- Use realistic lighting and correct scale
+- Clean, well-maintained environment
+- Include ONLY objects necessary to show the product's purpose
+  Example: A wheel stop with a car wheel touching it (no person visible)
+  Example: Safety barrier installed on a road edge (no workers)
+  Example: Bollard installed in parking lot with cars nearby (no people)
 
 📸 COMPOSITION:
-- Product and hands in SHARP FOCUS
-- Background slightly blurred (shallow depth of field)
-- Dynamic angle showing action and engagement
-- Professional color grading with natural, realistic tones
-- Show the product solving a real problem or being used for its intended purpose
+- Professional, catalog-quality photography
+- Straight-on or slight angle to show product clearly
+- Natural, appropriate lighting for the environment
+- Sharp focus on product
+- Clean, uncluttered background
 
-🎯 MOOD: Professional, authentic, action-oriented, showing real-world application
+🚫 WHAT NOT TO SHOW:
+- NO workers or people
+- NO hands touching the product
+- NO tools or installation equipment
+- NO installation process
+
+🚫 BRANDING:
+- NO brand names, logos, or text on the product
+- NO company signage or branded materials
+- Clean surfaces only
+
+🎯 FINAL RESULT:
+A professional, clean image showing the product already installed and serving its purpose, photographed as if for a high-quality product catalog.
 """,
-            "angle1": """
-📸 LIFESTYLE IMAGE - INSTALLATION/SETUP VIEW:
+            "installation": """
+📸 IMAGE 2: INSTALLATION SCENE (WORKERS INSTALLING THE PRODUCT)
 
-🎯 SCENE SETUP:
-- Show the product being INSTALLED, SET UP, or PREPARED for use
-- Different angle from main image - focus on preparation or assembly
-- Include human hands positioning, adjusting, or working with the product
-- Camera angle from side or three-quarter view
+🎯 OBJECTIVE:
+Create a realistic and professional installation scene showing TWO WORKERS in high-visibility clothing actively installing the product.
 
-👤 HUMAN ELEMENT:
-- Show hands positioning, measuring, or installing the product
-- Person preparing the product for use or adjusting settings
-- Different hand position/grip than main image
-- Tool usage if applicable (wrench, screwdriver, etc.)
+👷 WORKERS & CLOTHING:
+- Show TWO workers (not one, not three - exactly two)
+- Workers wearing HIGH-VISIBILITY clothing (bright orange, yellow, or lime green vests/jackets)
+- Professional work attire appropriate for the installation
+- Workers' faces PARTIALLY OUT OF FRAME or NOT CLEARLY VISIBLE
+- Focus on HANDS, TOOLS, and the PRODUCT
 
-🏗️ ENVIRONMENT:
-- Same or similar authentic work environment
-- Show preparation surface: workbench, floor, mounting location
-- Include installation context (mounting brackets, screws, other materials)
-- Different environmental angle than main image
-- Include realistic signage in background: safety warnings, instructional signs (generic, no brands)
-- Environmental text adds authenticity to the workplace setting
+🔧 INSTALLATION SCENE:
+- Show the product ON THE GROUND or installation surface
+- Display appropriate tools in use: drill, bolts, mallet, wrenches, etc. (depending on product)
+- Workers actively installing, positioning, or securing the product
+- Realistic installation process
+- Tools and equipment relevant to the specific product type
 
-📸 COMPOSITION:
-- Side angle or three-quarter view showing different product perspective
-- Hands and product interaction from different angle
-- Background with relevant work environment details (blurred)
-- Shows a DIFFERENT MOMENT in the product's use cycle than main image
+🤲 FOCUS AREAS:
+- HANDS of workers interacting with product
+- TOOLS being used for installation
+- THE PRODUCT being installed
+- Installation hardware (bolts, screws, mounting brackets, etc.)
 
-🎯 MOOD: Professional setup/installation scenario, showing product versatility and ease of use
-""",
-            "angle2": """
-EDIT INSTRUCTIONS (Side/Three-Quarter View):
-- Adjust camera angle to side or three-quarter view
-- Show different product features than main view
-- Apply soft natural-style lighting from top-front (30° angle)
-- Gentle shadows for dimension
-- Warm, inviting color temperature
-- Professional catalog photography style
-- Clean background
-- Keep product EXACTLY as it is - only adjust angle and lighting
-""",
-            "lifestyle": """
-EDIT INSTRUCTIONS (Lifestyle Context):
-- Place product in realistic usage environment
-- Natural or natural-looking lighting
-- Soft ambient light mimicking window light
-- Authentic, less formal composition
-- Show product in context where it would be used
-- Keep product EXACTLY as it is - only adjust setting and lighting
+🌍 ENVIRONMENT:
+- Realistic work site or installation location
+- Appropriate surface (concrete, asphalt, ground, etc.)
+- Professional, commercial setting
+- Clean but realistic work environment
+
+📸 COMPOSITION & STYLE:
+- Documentary-style photography
+- Real-life, authentic installation scene
+- Similar to corporate manuals and installation guides
+- Professional quality, not staged or artificial
+- Natural lighting appropriate for outdoor/work site
+- Focus on the installation process and product
+
+🚫 BRANDING:
+- NO brand names or logos on product
+- NO company signage on worker clothing
+- Generic high-vis clothing only
+- NO text except generic safety markings if needed
+
+🎯 FINAL RESULT:
+A professional installation scene showing two workers in high-vis gear actively installing the product, with focus on hands, tools, and the product itself - similar in style to professional installation manuals and corporate documentation.
 """
         }
 
-        return instructions.get(variation, instructions["main"])
+        # For backward compatibility, map old variations to new ones
+        if variation in ["main", "angle1"]:
+            return instructions.get("product_in_use", instructions["product_in_use"])
+        elif variation in ["angle2", "lifestyle"]:
+            return instructions.get("installation", instructions["installation"])
+
+        return instructions.get(variation, instructions["product_in_use"])
