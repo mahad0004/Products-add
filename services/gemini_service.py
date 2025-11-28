@@ -236,11 +236,21 @@ Create a REALISTIC, professional photograph showing this product being used in i
    - Safety equipment: Active work environment showing its protective use
    - Office products: Modern office, desk setup
    - Home products: Residential setting, home workshop
+
 2. Include relevant environmental context:
    - Other related equipment or materials in background (blurred)
    - Authentic workplace surfaces (concrete, metal workbench, wood, etc.)
    - Natural work environment lighting
    - Realistic clutter or workspace organization
+
+3. Add REALISTIC environmental signage for authenticity:
+   ✅ Safety signs visible in background: "CAUTION", "DANGER", "WARNING"
+   ✅ Directional or informational signs: "EXIT", "FIRE EXTINGUISHER"
+   ✅ Safety notices on walls or equipment (generic, not branded)
+   ✅ Measurement markings on tools or surfaces
+   ✅ Generic workplace posters (safety procedures, emergency info)
+   - These make the environment look REAL and professional
+   - NO company names or logos on signs
 
 📸 PROFESSIONAL PHOTOGRAPHY QUALITY:
 1. Photorealistic, looks like actual documentary-style product photography
@@ -257,14 +267,31 @@ Create a REALISTIC, professional photograph showing this product being used in i
 4. Realistic lighting with natural shadows
 5. Authentic product proportions and scale relative to human hands/body
 
-🚫 ABSOLUTELY NO TEXT OR BRANDING - CRITICAL:
-1. Remove ALL text from product: brand names, model numbers, labels, markings
-2. Remove ALL text from environment: signs, posters, labels on other items
-3. Remove company names, logos, manufacturer marks
-4. Replace text areas with CLEAN surfaces matching the product's material
-5. Remove any visible typography anywhere in the entire image
-6. Product must be completely TEXT-FREE and BRAND-FREE
-7. Background items should also be text-free
+🚫 BRAND & LOGO REMOVAL - CRITICAL:
+1. Remove ALL text from the PRODUCT itself:
+   - Brand names, model numbers, manufacturer marks, logos
+   - Product labels, serial numbers, company names
+   - Replace with CLEAN surfaces matching the product's material
+   - The product must be completely TEXT-FREE and BRAND-FREE
+
+2. KEEP realistic environmental text for authenticity:
+   ✅ KEEP: Safety signs ("DANGER", "CAUTION", "WARNING", "SAFETY FIRST")
+   ✅ KEEP: Directional signs ("EXIT", "ENTRANCE", "UP", "DOWN")
+   ✅ KEEP: Generic workplace signage ("FIRE EXTINGUISHER", "FIRST AID")
+   ✅ KEEP: Measurement markings on tools or rulers in background
+   ✅ KEEP: Generic instructional text on equipment
+
+3. REMOVE from environment:
+   ❌ REMOVE: Company names, business logos, brand names
+   ❌ REMOVE: Specific company signage or branded posters
+   ❌ REMOVE: Manufacturer logos on background equipment
+   ❌ REMOVE: Phone numbers, websites, email addresses
+
+4. Environmental text should be:
+   - Generic and universal (not company-specific)
+   - Safety-oriented or functional
+   - Realistic for the work environment
+   - Not promotional or branded
 
 ✅ WHAT TO SHOW:
 1. Product in ACTIVE USE or being handled/installed
@@ -642,6 +669,9 @@ Return ONLY the ultra-detailed image generation prompt, no additional text."""
 - Include relevant context: workbench, other tools, materials in background (blurred)
 - Natural work environment surfaces and textures
 - Realistic lighting for the setting (workshop lights, natural daylight, etc.)
+- ADD realistic environmental signage: safety signs ("CAUTION", "WARNING"), directional signs, generic workplace notices
+- Signs should be visible but blurred in background for authenticity
+- NO company logos or brand names on signs - keep them generic
 
 📸 COMPOSITION:
 - Product and hands in SHARP FOCUS
@@ -672,6 +702,8 @@ Return ONLY the ultra-detailed image generation prompt, no additional text."""
 - Show preparation surface: workbench, floor, mounting location
 - Include installation context (mounting brackets, screws, other materials)
 - Different environmental angle than main image
+- Include realistic signage in background: safety warnings, instructional signs (generic, no brands)
+- Environmental text adds authenticity to the workplace setting
 
 📸 COMPOSITION:
 - Side angle or three-quarter view showing different product perspective
