@@ -78,17 +78,23 @@ class OpenAIService:
    - meta_description: same as seo_description
 
 ========== CONTENT RULES ==========
-9. Preserve factual numbers (dimensions, capacity, weight) in TECHNICAL SPECS section
-10. Do NOT invent new specs - only use what's provided
-11. Use US English
-12. Ensure body_html is 300-800 words
-13. Focus ONLY on product features, materials, benefits, and specifications
-14. Return ONLY valid JSON - no extra text or commentary"""
+9. PRESERVE ALL factual numbers, dimensions, and measurements:
+   - Dimensions (length, width, height, diameter, thickness)
+   - Weight, capacity, volume
+   - Size charts and dimension tables
+   - Technical specifications
+   - Material specifications (gauge, grade, etc.)
+10. INCLUDE A "DIMENSIONS & SPECIFICATIONS" SECTION in body_html with ALL measurements
+11. Do NOT invent new specs - only use what's provided
+12. Use US English
+13. Ensure body_html is 300-1000 words (longer if needed for specs/dimensions)
+14. Focus ONLY on product features, materials, benefits, and specifications
+15. Return ONLY valid JSON - no extra text or commentary"""
 
         user_prompt = f"""Raw product input:
 {{
   "input_title": "{title}",
-  "input_description": "{description[:1000]}",
+  "input_description": "{description[:3000]}",
   "brand": "{vendor}"
 }}
 
@@ -98,6 +104,13 @@ class OpenAIService:
    - Phone numbers in ANY format: digits like 1234567890, patterns with dashes or spaces
    - Emails: any patterns like info at company dot com
    - Websites: URLs like www dot example dot com or https patterns
+
+2. CRITICAL - PRESERVE ALL PRODUCT INFORMATION:
+   - KEEP ALL dimensions, measurements, sizes (e.g., "1800mm x 600mm", "L x W x H", etc.)
+   - KEEP ALL size charts, dimension tables, specification tables
+   - KEEP ALL technical specifications (weight, capacity, material thickness, etc.)
+   - KEEP ALL compatibility information
+   - These are CRITICAL for customers - do NOT remove or abbreviate them
    - Physical addresses: street names, postcodes, city names with addresses
    - Social media: handles and links to social platforms
 
@@ -117,12 +130,15 @@ class OpenAIService:
    - slug: URL-safe slug with NO brand names
    - meta_description: Same as seo_description
 
-4. IMPORTANT - In body_html:
+4. IMPORTANT - In body_html structure:
    - Include headings (<h2>), paragraphs (<p>), bullet lists (<ul><li>)
-   - Add technical specs section if numeric specs exist
+   - REQUIRED: Add <h2>Dimensions & Specifications</h2> section with ALL measurements
+   - Format dimensions clearly in a list: <ul><li>Length: XXXmm</li><li>Width: XXXmm</li></ul>
+   - Include size charts/tables if present in original description
+   - Add <h2>Technical Specifications</h2> section with weight, capacity, material specs
    - Add 2-3 short FAQ Q&A
    - SCAN ENTIRE HTML for phone numbers, emails, websites and REMOVE them
-   - Do NOT invent specs
+   - Do NOT invent specs - only use what's in the input description
 
 ========== OUTPUT ==========
 Return ONLY valid JSON with these exact keys:
