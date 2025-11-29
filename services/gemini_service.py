@@ -866,10 +866,29 @@ Create a clean, professional product image showing the product in its intended u
 A professional, clean image showing the product already installed and serving its purpose, photographed as if for a high-quality product catalog.
 """,
             "installation": """
-📸 IMAGE 2: INSTALLATION SCENE (WORKERS INSTALLING THE PRODUCT)
+📸 IMAGE 2: REAL-LIFE APPLICATION (PRODUCT IN ACTUAL USE)
 
 🎯 OBJECTIVE:
-Create a realistic and professional installation scene showing TWO WORKERS in high-visibility clothing actively installing the product.
+Show the product being used in a REAL-LIFE APPLICATION - how it actually functions in the real world.
+This is NOT an installation scene - this shows the product DOING ITS JOB.
+
+🎯 WHAT TO SHOW:
+Analyze the product title and reference images to understand its PURPOSE, then show it fulfilling that purpose:
+
+Examples by product type:
+- IBC Spill Pallet → Show in chemical storage area/warehouse with IBC container on top, realistic workplace setting
+- Parking Bollard → Show installed in parking lot protecting area, cars nearby, real parking environment
+- Wheel Stop → Show in parking space with vehicle wheel against it
+- Safety Barrier → Show protecting hazard area in active workplace
+- Floor Tape/Markers → Show applied on floor with workplace activity (people walking, forklifts, etc.)
+- Storage Rack → Show in warehouse with items stored, realistic facility
+- Speed Bump → Show installed on road/driveway with vehicles
+- Sign/Post → Show in its intended location serving its warning/direction purpose
+
+🎯 KEY PRINCIPLE: FUNCTION OVER INSTALLATION
+- Show the product WORKING, not being installed
+- Show the product SERVING ITS PURPOSE in its natural environment
+- The viewer should understand WHY this product exists and what it does
 
 🔒 PRESERVE EXACT PRODUCT APPEARANCE:
 - The product being installed must be IDENTICAL to the original reference images
@@ -881,54 +900,57 @@ Create a realistic and professional installation scene showing TWO WORKERS in hi
 📸 CRITICAL: SHOW COMPLETE PRODUCT AS SEEN IN REFERENCE IMAGES:
 - Study ALL reference images to understand the COMPLETE product
 - If product is designed to HOLD items (pallets, racks, stands):
-  * Reference images may show the item it holds (IBC on pallet, boxes on rack)
   * Show the COMPLETE setup - the base product WITH what it's meant to hold
-  * For installation scene, show workers positioning BOTH the base AND the items it holds
-- If product is a complete assembly, show ALL components as seen in references
-- DO NOT show just an empty base/frame if reference shows it loaded/complete
+  * IBC pallet → Show WITH IBC container on top
+  * Storage rack → Show WITH items stored on shelves
+  * Tool holder → Show WITH tools in place
+- Show the product LOADED and FUNCTIONAL as it would be in real use
+- DO NOT show just an empty base/frame if it's meant to hold something
 
-👷 WORKERS & CLOTHING:
-- Show TWO workers (not one, not three - exactly two)
-- Workers wearing HIGH-VISIBILITY clothing (bright orange, yellow, or lime green vests/jackets)
-- Professional work attire appropriate for the installation
-- Workers' faces PARTIALLY OUT OF FRAME or NOT CLEARLY VISIBLE
-- Focus on HANDS, TOOLS, and the PRODUCT (which must remain unchanged)
+👥 PEOPLE IN THE SCENE (OPTIONAL - USE ONLY IF IT ADDS CONTEXT):
+- People are OPTIONAL, not required - only include if it helps show the application
+- If people are shown, they should be:
+  * In the background or periphery, not the focus
+  * Using/interacting with the area where product is (walking on marked floor, parking near bollard, etc.)
+  * Dressed appropriately for the setting (work clothes, safety gear if needed)
+  * Natural and authentic, not posed
+- For most products, NO people needed - just show the product working in its environment
 
-🔧 INSTALLATION SCENE:
-- Show the product ON THE GROUND or installation surface
-- Display appropriate tools in use: drill, bolts, mallet, wrenches, etc. (depending on product)
-- Workers actively installing, positioning, or securing the product
-- Realistic installation process
-- Tools and equipment relevant to the specific product type
+🌍 REAL-LIFE ENVIRONMENT:
+Choose the authentic environment where this product would actually be used:
+- Pallets/IBCs → Chemical storage area, warehouse, outdoor containment area
+- Parking equipment (bollards, wheel stops, speed bumps) → Parking lots, driveways, roads
+- Storage/racks → Warehouses, facilities, organized storage areas
+- Safety equipment (barriers, tape, signs) → Active workplaces, construction sites, facilities
+- Floor markings → Warehouse floors with forklifts/activity, parking areas
 
-🤲 FOCUS AREAS:
-- HANDS of workers interacting with product
-- TOOLS being used for installation
-- THE PRODUCT being installed
-- Installation hardware (bolts, screws, mounting brackets, etc.)
-
-🌍 ENVIRONMENT:
-- Realistic work site or installation location
-- Appropriate surface (concrete, asphalt, ground, etc.)
-- Professional, commercial setting
-- Clean but realistic work environment
+Show realistic context:
+- Other relevant equipment in background (forklifts, vehicles, machinery, shelving)
+- Proper workplace setting (concrete floors, industrial lighting, outdoor paving)
+- Active environment that shows the product is needed and functional
+- NOT studio setting - real workplace or outdoor location
 
 📸 COMPOSITION & STYLE:
-- Documentary-style photography
-- Real-life, authentic installation scene
-- Similar to corporate manuals and installation guides
-- Professional quality, not staged or artificial
-- Natural lighting appropriate for outdoor/work site
-- Focus on the installation process and product
+- Professional industrial/commercial photography
+- Documentary-style showing real-world application
+- Wide or medium shot that shows product AND its working environment
+- Natural lighting appropriate to the setting (warehouse lights, outdoor daylight)
+- Focus on the product serving its purpose
+- Authentic, not overly staged or perfect
 
 🚫 BRANDING:
 - NO brand names or logos on product
-- NO company signage on worker clothing
-- Generic high-vis clothing only
-- NO text except generic safety markings if needed
+- NO company signage in environment
+- NO text except generic safety markings if appropriate for setting
 
 🎯 FINAL RESULT:
-A professional installation scene showing two workers in high-vis gear actively installing the product, with focus on hands, tools, and the product itself - similar in style to professional installation manuals and corporate documentation.
+A professional photograph showing the product in REAL-LIFE APPLICATION - actively serving its purpose in its natural environment. The viewer should clearly understand what this product does and why it's useful. Show the COMPLETE product (loaded/functional) in an authentic workplace or outdoor setting that demonstrates its real-world use case.
+
+Examples of final results:
+- IBC Spill Pallet → In warehouse with IBC container on top, chemical storage setting
+- Parking Bollard → Installed in parking lot, protecting area, cars visible
+- Floor Tape → Applied on warehouse floor, active workplace environment
+- Storage Rack → In facility with items stored, realistic warehouse setting
 """,
             "application": """
 📸 IMAGE 2: PRODUCT APPLICATION (HANDS APPLYING/USING THE PRODUCT)
