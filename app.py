@@ -741,10 +741,15 @@ def create_ai_dupes():
                     # No need to double again - just copy the price as-is
                     variant_price = float(variant.price) if variant.price else 0
 
-                    # Skip zero-price variants
-                    if variant_price <= 0.01:
-                        logger.info(f"⏭️  Skipping zero-price variant when creating AI product: {variant.title} (£{variant_price})")
+                    # Only skip zero-price variants if they're ALSO placeholders
+                    # Don't skip legitimate variants that just have missing price data
+                    if variant_price <= 0.01 and is_placeholder:
+                        logger.info(f"⏭️  Skipping placeholder variant with zero price: {variant.title} (£{variant_price})")
                         continue
+
+                    # Warn about zero-price variants but don't skip them
+                    if variant_price <= 0.01:
+                        logger.warning(f"⚠️  Variant has zero/missing price (keeping anyway): {variant.title} - CHECK SOURCE DATA")
 
                     variant_compare_price = float(variant.compare_at_price) if variant.compare_at_price else None
 
@@ -1386,10 +1391,15 @@ def process_single_product(source_product, ai_job_id, fast_mode, created_counter
                 # No need to double again - just copy the price as-is
                 variant_price = float(variant.price) if variant.price else 0
 
-                # Skip zero-price variants
-                if variant_price <= 0.01:
-                    logger.info(f"⏭️  Skipping zero-price variant in AI job: {variant.title} (£{variant_price})")
+                # Only skip zero-price variants if they're ALSO placeholders
+                # Don't skip legitimate variants that just have missing price data
+                if variant_price <= 0.01 and is_placeholder:
+                    logger.info(f"⏭️  Skipping placeholder variant with zero price in AI job: {variant.title} (£{variant_price})")
                     continue
+
+                # Warn about zero-price variants but don't skip them
+                if variant_price <= 0.01:
+                    logger.warning(f"⚠️  Variant has zero/missing price (keeping anyway): {variant.title} - CHECK SOURCE DATA")
 
                 variant_compare_price = float(variant.compare_at_price) if variant.compare_at_price else None
 
