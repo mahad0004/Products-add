@@ -179,7 +179,6 @@ class ProductMapper:
 
             return [{
                 'price': f"{price:.2f}",
-                'option1': 'Default',
                 'title': 'Default Title',
                 'requires_shipping': True,
                 'taxable': True,
@@ -267,9 +266,13 @@ class ProductMapper:
                     # Fallback: use full title as option1
                     variant['option1'] = variant['title']
 
-            # Final fallback: ensure option1 exists
+            # Final fallback: only set option1 if we have actual option values
+            # Don't set option1 for single-variant products to avoid "Option 1: Default" display
             if 'option1' not in variant:
-                variant['option1'] = 'Default'
+                # If title suggests this is not a default variant, use title as option1
+                if variant['title'] and variant['title'] not in ['Default Title', 'Default', f'Variant {len(variants) + 1}']:
+                    variant['option1'] = variant['title']
+                # Otherwise, leave option1 unset for single-variant products
 
             variants.append(variant)
 
@@ -315,7 +318,8 @@ class ProductMapper:
 
                 for v in variants:
                     value = v.get(f'option{i}')
-                    if value and value != 'Default':
+                    # Exclude default values - these are for single-variant products
+                    if value and value not in ['Default', 'Default Title']:
                         option_map[option_name].add(value)
 
         # Build final options array

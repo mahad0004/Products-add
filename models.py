@@ -145,9 +145,8 @@ class Product(db.Model):
         if not unique_variants:
             logger.warning(f"⚠️ No unique variants found, creating default variant")
             unique_variants = [{
-                'title': 'Default',
+                'title': 'Default Title',
                 'price': '0.00',
-                'option1': 'Default',
                 'requires_shipping': True,
                 'taxable': True,
                 'inventory_management': None,
@@ -165,14 +164,15 @@ class Product(db.Model):
         option3_values = set()
 
         for variant in unique_variants:
-            if variant.get('option1'):
+            # Only collect real option values, not "Default" or "Default Title"
+            if variant.get('option1') and variant['option1'] not in ['Default', 'Default Title']:
                 option1_values.add(variant['option1'])
-            if variant.get('option2'):
+            if variant.get('option2') and variant['option2'] not in ['Default', 'Default Title']:
                 option2_values.add(variant['option2'])
-            if variant.get('option3'):
+            if variant.get('option3') and variant['option3'] not in ['Default', 'Default Title']:
                 option3_values.add(variant['option3'])
 
-        # Build options array
+        # Build options array (only for real variant options)
         if option1_values:
             options.append({'name': 'Option 1'})
         if option2_values:
@@ -247,15 +247,19 @@ class ProductVariant(db.Model):
 
     def to_shopify_format(self):
         variant = {
-            'title': self.title,
+            'title': self.title or 'Default Title',
             'price': self.price,
-            'option1': self.option1 or 'Default',
             'requires_shipping': self.requires_shipping,
             'taxable': self.taxable,
             'inventory_management': None,
             'inventory_policy': 'continue',
             'fulfillment_service': 'manual'
         }
+
+        # Only include option1 if it has a real value (not Default or Default Title)
+        # This prevents "Option 1: Default" from showing in Shopify
+        if self.option1 and self.option1 not in ['Default', 'Default Title']:
+            variant['option1'] = self.option1
 
         if self.compare_at_price:
             variant['compare_at_price'] = self.compare_at_price
@@ -435,9 +439,8 @@ class AIProduct(db.Model):
         if not unique_variants:
             logger.warning(f"⚠️ No unique variants found, creating default variant")
             unique_variants = [{
-                'title': 'Default',
+                'title': 'Default Title',
                 'price': '0.00',
-                'option1': 'Default',
                 'requires_shipping': True,
                 'taxable': True,
                 'inventory_management': None,
@@ -455,14 +458,15 @@ class AIProduct(db.Model):
         option3_values = set()
 
         for variant in unique_variants:
-            if variant.get('option1'):
+            # Only collect real option values, not "Default" or "Default Title"
+            if variant.get('option1') and variant['option1'] not in ['Default', 'Default Title']:
                 option1_values.add(variant['option1'])
-            if variant.get('option2'):
+            if variant.get('option2') and variant['option2'] not in ['Default', 'Default Title']:
                 option2_values.add(variant['option2'])
-            if variant.get('option3'):
+            if variant.get('option3') and variant['option3'] not in ['Default', 'Default Title']:
                 option3_values.add(variant['option3'])
 
-        # Build options array
+        # Build options array (only for real variant options)
         if option1_values:
             options.append({'name': 'Option 1'})
         if option2_values:
@@ -529,15 +533,19 @@ class AIProductVariant(db.Model):
 
     def to_shopify_format(self):
         variant = {
-            'title': self.title,
+            'title': self.title or 'Default Title',
             'price': self.price,
-            'option1': self.option1 or 'Default',
             'requires_shipping': self.requires_shipping,
             'taxable': self.taxable,
             'inventory_management': None,
             'inventory_policy': 'continue',
             'fulfillment_service': 'manual'
         }
+
+        # Only include option1 if it has a real value (not Default or Default Title)
+        # This prevents "Option 1: Default" from showing in Shopify
+        if self.option1 and self.option1 not in ['Default', 'Default Title']:
+            variant['option1'] = self.option1
 
         if self.compare_at_price:
             variant['compare_at_price'] = self.compare_at_price

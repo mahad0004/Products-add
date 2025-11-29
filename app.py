@@ -683,12 +683,12 @@ def create_ai_dupes():
                     # CRITICAL FIX: Parse variant title to extract option values
                     # Many source products have option1='Default' because they were scraped before the fix
                     # Parse title like "Galvanised / Bolt Down (flanged) excluding Bolts" into distinct options
-                    option1_value = variant.option1 if variant.option1 and variant.option1 != 'Default' else None
+                    option1_value = variant.option1 if variant.option1 and variant.option1 not in ['Default', 'Default Title'] else None
                     option2_value = variant.option2
                     option3_value = variant.option3
 
                     # If no valid option1, parse from title
-                    if not option1_value and variant.title:
+                    if not option1_value and variant.title and variant.title not in ['Default', 'Default Title']:
                         title_parts = variant.title.split('/')
                         title_parts = [part.strip() for part in title_parts if part.strip()]
 
@@ -699,13 +699,14 @@ def create_ai_dupes():
                         if len(title_parts) >= 3:
                             option3_value = title_parts[2]
 
-                    # Final fallback
+                    # Final fallback: Leave as None for single-variant products
+                    # This prevents "Option 1: Default" from showing in Shopify
                     if not option1_value:
-                        option1_value = variant.title if variant.title else 'Default'
+                        option1_value = None
 
                     ai_variant = AIProductVariant(
                         ai_product_id=ai_product.id,
-                        title=variant.title,
+                        title=variant.title or 'Default Title',
                         sku=variant.sku,
                         barcode=variant.barcode,
                         price=variant_price,
@@ -1305,12 +1306,12 @@ def process_single_product(source_product, ai_job_id, fast_mode, created_counter
                 # CRITICAL FIX: Parse variant title to extract option values
                 # Many source products have option1='Default' because they were scraped before the fix
                 # Parse title like "Galvanised / Bolt Down (flanged) excluding Bolts" into distinct options
-                option1_value = variant.option1 if variant.option1 and variant.option1 != 'Default' else None
+                option1_value = variant.option1 if variant.option1 and variant.option1 not in ['Default', 'Default Title'] else None
                 option2_value = variant.option2
                 option3_value = variant.option3
 
                 # If no valid option1, parse from title
-                if not option1_value and variant.title:
+                if not option1_value and variant.title and variant.title not in ['Default', 'Default Title']:
                     title_parts = variant.title.split('/')
                     title_parts = [part.strip() for part in title_parts if part.strip()]
 
@@ -1321,13 +1322,14 @@ def process_single_product(source_product, ai_job_id, fast_mode, created_counter
                     if len(title_parts) >= 3:
                         option3_value = title_parts[2]
 
-                # Final fallback
+                # Final fallback: Leave as None for single-variant products
+                # This prevents "Option 1: Default" from showing in Shopify
                 if not option1_value:
-                    option1_value = variant.title if variant.title else 'Default'
+                    option1_value = None
 
                 ai_variant = AIProductVariant(
                     ai_product_id=ai_product.id,
-                    title=variant.title,
+                    title=variant.title or 'Default Title',
                     sku=variant.sku,
                     barcode=variant.barcode,
                     price=variant_price,
