@@ -220,8 +220,21 @@ class GeminiService:
             # Get next client in rotation
             client, key_name = self._get_next_client()
             if not client:
-                logger.warning("Gemini client not configured")
-                return None
+                # Check if all keys are exhausted
+                if self.are_all_keys_exhausted():
+                    # Calculate time until quota reset
+                    seconds_until_reset, reset_time = self._calculate_quota_reset_time()
+
+                    logger.error(f"❌ ALL {len(self.clients)} API KEYS EXHAUSTED!")
+
+                    # Raise exception to trigger wait-and-resume
+                    raise GeminiQuotaExhaustedError(
+                        f"Gemini API quota exhausted. Quota resets at {reset_time.strftime('%Y-%m-%d %H:%M:%S %Z')}",
+                        reset_time=reset_time
+                    )
+                else:
+                    logger.warning("Gemini client not configured")
+                    return None
 
             logger.info(f"🍌 Nano Banana [{key_name}]: Editing product image for: {product_title} (variation: {variation})")
 
@@ -427,8 +440,21 @@ A compelling, photorealistic lifestyle image showing the product being used in i
             # Get next client in rotation
             client, key_name = self._get_next_client()
             if not client:
-                logger.warning("Gemini client not configured")
-                return None
+                # Check if all keys are exhausted
+                if self.are_all_keys_exhausted():
+                    # Calculate time until quota reset
+                    seconds_until_reset, reset_time = self._calculate_quota_reset_time()
+
+                    logger.error(f"❌ ALL {len(self.clients)} API KEYS EXHAUSTED!")
+
+                    # Raise exception to trigger wait-and-resume
+                    raise GeminiQuotaExhaustedError(
+                        f"Gemini API quota exhausted. Quota resets at {reset_time.strftime('%Y-%m-%d %H:%M:%S %Z')}",
+                        reset_time=reset_time
+                    )
+                else:
+                    logger.warning("Gemini client not configured")
+                    return None
 
             logger.info(f"🍌 Nano Banana [{key_name}]: Generating image for: {product_title} (variation: {variation})")
             logger.info(f"Base prompt: {image_prompt[:150]}...")
