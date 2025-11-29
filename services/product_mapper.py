@@ -210,15 +210,12 @@ class ProductMapper:
 
             price = self._extract_price(v, product)
 
-            # Only skip zero-price variants if they're ALSO placeholders
-            # Zero price alone might be a data issue we should preserve
-            if price <= 0.01 and is_placeholder:
-                logger.info(f"⏭️  Skipping placeholder variant with zero price: {v.get('title')} (price: £{price})")
-                continue
-
-            # Warn about zero-price variants but keep them
+            # Skip zero-price variants - NO zero-price products allowed
             if price <= 0.01:
-                logger.warning(f"⚠️  Variant has zero/missing price (keeping anyway): {v.get('title')} (£{price}) - CHECK SOURCE DATA")
+                logger.warning(f"⏭️  SKIPPING VARIANT: Zero/missing price in scraped data")
+                logger.warning(f"     Variant: {v.get('title')} (Price: £{price})")
+                logger.warning(f"     → Check Apify scraper or source Shopify store")
+                continue
 
             # Compare at price
             compare_at_price = None
