@@ -296,6 +296,14 @@ class GeminiService:
 - Ensure the generated image shows the product at its CORRECT REAL-WORLD SCALE
 - If the product is large (barriers, bollards, parking equipment, industrial items), show it at FULL SIZE
 - If the product is small (tools, accessories), show it at appropriate human-scale
+
+🎯 COMPLETE PRODUCT SETUP:
+- Study ALL {len(all_image_urls)} reference images to see the COMPLETE product setup
+- If images show containers/tanks ON a pallet (like IBC Spill Pallets) → show WITH containers
+- If images show items IN/ON racks or shelves → show WITH items stored
+- If images show equipment WITH accessories or attachments → show COMPLETE assembly
+- DO NOT generate just an empty base/frame if references show it loaded or complete
+- The reference images show how the product is MEANT TO LOOK - replicate that exactly
 """
 
             edit_prompt = f"""You are a professional lifestyle product photographer. Transform this product image into a compelling, real-world application photograph showing the product in use.
@@ -366,12 +374,20 @@ SCENARIO TYPE: {scenario_type}
 4. Realistic lighting with natural shadows
 5. Authentic product proportions and scale relative to human body
 
-🔍 USE ALL REFERENCE IMAGES TO MAINTAIN PRODUCT CONSISTENCY:
-1. Study ALL provided reference images carefully to understand the exact product appearance
-2. Use multiple angles from reference images to maintain accurate product features
-3. Cross-reference all images to ensure color, size, and design consistency
-4. The product in the generated image must match ALL reference images precisely
-5. Multiple reference images help you understand the true product - use them all!
+🔍 CRITICAL: ANALYZE ALL REFERENCE IMAGES TO UNDERSTAND THE COMPLETE PRODUCT:
+1. Study ALL provided reference images carefully - they show the COMPLETE product setup
+2. Look at what the reference images show:
+   - If images show a container/tank ON a pallet → generate with container ON pallet
+   - If images show a rack WITH items stored → generate with items IN/ON the rack
+   - If images show a holder WITH tools/objects → generate with those objects in place
+   - The reference images show the INTENDED COMPLETE SETUP - replicate that!
+3. Understand the product's PURPOSE from reference images:
+   - Pallets HOLD containers/IBCs - show them holding the containers
+   - Racks STORE items - show them with items stored
+   - Stands SUPPORT equipment - show them supporting equipment
+   - If you only see the base/structure in some images, check OTHER images for complete setup
+4. Cross-reference ALL images to see the full context and intended use
+5. Generate the product exactly as shown in reference images - COMPLETE and FUNCTIONAL
 
 🚫 BRAND & LOGO REMOVAL - CRITICAL:
 1. Remove ALL text from the PRODUCT itself:
@@ -803,12 +819,21 @@ Create a clean, professional product image showing the product in its intended u
 - ONLY change the environment/background/context around the product
 - The product is perfect as-is - DO NOT redesign or modify it
 
+📸 CRITICAL: SHOW COMPLETE PRODUCT AS SEEN IN REFERENCE IMAGES:
+- Study ALL reference images to see how the product is MEANT to be shown
+- If reference images show containers ON pallets → show containers ON pallet
+- If reference images show items IN/ON racks → show items stored properly
+- If reference images show equipment WITH accessories → show complete setup
+- DO NOT show just the base/frame if reference images show complete assembly
+- The reference images are your guide - replicate the COMPLETE setup you see
+
 🔧 PRODUCT PRESENTATION:
 - Show the product ALREADY INSTALLED and in use
 - Product functioning as designed in its final, installed state
+- COMPLETE SETUP as shown in reference images (not just base/empty structure)
 - Clean, professional presentation
 - Product should look like it's being used, but WITHOUT people visibly interacting with it
-- The SAME EXACT product from the reference images, just in a real-world setting
+- The SAME EXACT COMPLETE product from the reference images, just in a real-world setting
 
 🌍 ENVIRONMENT & CONTEXT:
 - Realistic environment relevant to the product
@@ -852,6 +877,15 @@ Create a realistic and professional installation scene showing TWO WORKERS in hi
 - ONLY change the environment/scenario around the product (add workers, tools, workplace)
 - The product is perfect as-is - DO NOT redesign or modify it
 - Show the EXACT SAME product being installed in a realistic workplace setting
+
+📸 CRITICAL: SHOW COMPLETE PRODUCT AS SEEN IN REFERENCE IMAGES:
+- Study ALL reference images to understand the COMPLETE product
+- If product is designed to HOLD items (pallets, racks, stands):
+  * Reference images may show the item it holds (IBC on pallet, boxes on rack)
+  * Show the COMPLETE setup - the base product WITH what it's meant to hold
+  * For installation scene, show workers positioning BOTH the base AND the items it holds
+- If product is a complete assembly, show ALL components as seen in references
+- DO NOT show just an empty base/frame if reference shows it loaded/complete
 
 👷 WORKERS & CLOTHING:
 - Show TWO workers (not one, not three - exactly two)
