@@ -105,12 +105,15 @@ class OpenAIService:
    - Emails: any patterns like info at company dot com
    - Websites: URLs like www dot example dot com or https patterns
 
-2. CRITICAL - PRESERVE ALL PRODUCT INFORMATION:
+2. CRITICAL - PRESERVE AND FORMAT ALL PRODUCT INFORMATION:
    - KEEP ALL dimensions, measurements, sizes (e.g., "1800mm x 600mm", "L x W x H", etc.)
    - KEEP ALL size charts, dimension tables, specification tables
+   - FORMAT dimensions as professional HTML tables (see examples in system prompt)
+   - FORMAT size charts as clean, styled HTML tables with headers
    - KEEP ALL technical specifications (weight, capacity, material thickness, etc.)
    - KEEP ALL compatibility information
    - These are CRITICAL for customers - do NOT remove or abbreviate them
+   - Tables MUST include inline CSS styling for professional appearance
    - Physical addresses: street names, postcodes, city names with addresses
    - Social media: handles and links to social platforms
 
@@ -132,10 +135,44 @@ class OpenAIService:
 
 4. IMPORTANT - In body_html structure:
    - Include headings (<h2>), paragraphs (<p>), bullet lists (<ul><li>)
+
    - REQUIRED: Add <h2>Dimensions & Specifications</h2> section with ALL measurements
-   - Format dimensions clearly in a list: <ul><li>Length: XXXmm</li><li>Width: XXXmm</li></ul>
-   - Include size charts/tables if present in original description
-   - Add <h2>Technical Specifications</h2> section with weight, capacity, material specs
+
+   - FORMAT DIMENSIONS AS HTML TABLE (if multiple dimension values exist):
+     ```html
+     <table style="width:100%; border-collapse:collapse; margin:20px 0;">
+       <thead>
+         <tr style="background-color:#f8f9fa; border-bottom:2px solid #dee2e6;">
+           <th style="padding:12px; text-align:left; border:1px solid #dee2e6;">Specification</th>
+           <th style="padding:12px; text-align:left; border:1px solid #dee2e6;">Measurement</th>
+         </tr>
+       </thead>
+       <tbody>
+         <tr><td style="padding:10px; border:1px solid #dee2e6;">Length</td><td style="padding:10px; border:1px solid #dee2e6;">1800mm</td></tr>
+         <tr><td style="padding:10px; border:1px solid #dee2e6;">Width</td><td style="padding:10px; border:1px solid #dee2e6;">600mm</td></tr>
+         <tr><td style="padding:10px; border:1px solid #dee2e6;">Height</td><td style="padding:10px; border:1px solid #dee2e6;">1200mm</td></tr>
+       </tbody>
+     </table>
+     ```
+
+   - FORMAT SIZE CHARTS AS HTML TABLE (if multiple sizes/variants exist):
+     ```html
+     <table style="width:100%; border-collapse:collapse; margin:20px 0;">
+       <thead>
+         <tr style="background-color:#f8f9fa; border-bottom:2px solid #dee2e6;">
+           <th style="padding:12px; text-align:left; border:1px solid #dee2e6;">Size</th>
+           <th style="padding:12px; text-align:left; border:1px solid #dee2e6;">Length</th>
+           <th style="padding:12px; text-align:left; border:1px solid #dee2e6;">Width</th>
+           <th style="padding:12px; text-align:left; border:1px solid #dee2e6;">Height</th>
+         </tr>
+       </thead>
+       <tbody>
+         <tr><td style="padding:10px; border:1px solid #dee2e6;">Small</td><td>...</td><td>...</td><td>...</td></tr>
+       </tbody>
+     </table>
+     ```
+
+   - Add <h2>Technical Specifications</h2> section (can also use table format)
    - Add 2-3 short FAQ Q&A
    - SCAN ENTIRE HTML for phone numbers, emails, websites and REMOVE them
    - Do NOT invent specs - only use what's in the input description
