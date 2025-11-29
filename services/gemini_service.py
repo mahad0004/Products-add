@@ -77,18 +77,18 @@ class GeminiService:
         else:
             logger.info(f"🔄 Multi-key rotation enabled: {len(self.clients)} API keys loaded")
             logger.info(f"   ")
-            logger.info(f"   ⚙️  QUOTA MANAGEMENT WORKFLOW:")
-            logger.info(f"   1️⃣  Use Key 1 (2,000 requests) until quota exhausted")
+            logger.info(f"   ⚙️  DYNAMIC QUOTA MANAGEMENT:")
+            logger.info(f"   1️⃣  Use Key 1 → Run until API returns quota error")
             if len(self.clients) > 1:
                 for i in range(2, len(self.clients) + 1):
-                    logger.info(f"   {i}️⃣  Switch to Key {i} (2,000 requests) until quota exhausted")
+                    logger.info(f"   {i}️⃣  Switch to Key {i} → Run until API returns quota error")
             logger.info(f"   ⏸️  When ALL keys exhausted → Auto-pause processing")
             logger.info(f"   💤 Wait until midnight Pacific Time (quota resets)")
             logger.info(f"   ▶️  Auto-resume processing with fresh quota")
             logger.info(f"   ")
-            logger.info(f"   📊 Each key: 2,000 requests/day (Tier 1)")
-            logger.info(f"   📊 Total keys: {len(self.clients)} keys = Up to {len(self.clients) * 2000} requests per day cycle")
-            logger.info(f"   📊 Products: {len(self.clients) * 1000} products/day (Pro Mode - 2 images per product)")
+            logger.info(f"   📊 Quota Detection: Dynamic (waits for 429/RESOURCE_EXHAUSTED errors)")
+            logger.info(f"   📊 Total API keys: {len(self.clients)} keys")
+            logger.info(f"   📊 Mode: Pro Mode (2 images per product)")
 
         # Round-robin rotation index (thread-safe)
         self._current_key_index = 0
@@ -391,8 +391,11 @@ A compelling, photorealistic lifestyle image showing the product being used in i
 
             # Check if this is a quota exhaustion error
             if "429" in error_str or "RESOURCE_EXHAUSTED" in error_str or "Quota exceeded" in error_str:
-                logger.warning(f"⚠️ [{key_name}] QUOTA EXHAUSTED for {product_title}")
-                logger.warning(f"   Error: {error_str}")
+                # Get actual usage count for this key
+                usage_count = self.usage_counts.get(key_name, 0)
+                logger.warning(f"⚠️ [{key_name}] QUOTA EXHAUSTED after {usage_count} requests")
+                logger.warning(f"   Product: {product_title}")
+                logger.warning(f"   API Error: {error_str[:100]}...")
 
                 # Mark this key as quota exhausted
                 self.quota_exhausted[key_name] = True
@@ -402,7 +405,12 @@ A compelling, photorealistic lifestyle image showing the product being used in i
                     # Calculate time until quota reset
                     seconds_until_reset, reset_time = self._calculate_quota_reset_time()
 
+                    # Log total usage across all keys
+                    total_requests = sum(self.usage_counts.values())
                     logger.error(f"❌ ALL {len(self.clients)} API KEYS EXHAUSTED!")
+                    logger.error(f"   Total requests processed: {total_requests}")
+                    for k, count in self.usage_counts.items():
+                        logger.error(f"   {k}: {count} requests")
 
                     # Raise custom exception only when ALL keys are exhausted
                     raise GeminiQuotaExhaustedError(
@@ -412,7 +420,7 @@ A compelling, photorealistic lifestyle image showing the product being used in i
                 else:
                     # Some keys still available - return None to try again with next key
                     remaining_keys = sum(1 for exhausted in self.quota_exhausted.values() if not exhausted)
-                    logger.info(f"📊 {remaining_keys}/{len(self.clients)} API keys still available - continuing with next key")
+                    logger.info(f"📊 {remaining_keys}/{len(self.clients)} API keys still available - switching to next key")
                     return None
 
             # Other errors
@@ -510,8 +518,11 @@ A compelling, photorealistic lifestyle image showing the product being used in i
 
             # Check if this is a quota exhaustion error
             if "429" in error_str or "RESOURCE_EXHAUSTED" in error_str or "Quota exceeded" in error_str:
-                logger.warning(f"⚠️ [{key_name}] QUOTA EXHAUSTED for {product_title}")
-                logger.warning(f"   Error: {error_str}")
+                # Get actual usage count for this key
+                usage_count = self.usage_counts.get(key_name, 0)
+                logger.warning(f"⚠️ [{key_name}] QUOTA EXHAUSTED after {usage_count} requests")
+                logger.warning(f"   Product: {product_title}")
+                logger.warning(f"   API Error: {error_str[:100]}...")
 
                 # Mark this key as quota exhausted
                 self.quota_exhausted[key_name] = True
@@ -521,7 +532,12 @@ A compelling, photorealistic lifestyle image showing the product being used in i
                     # Calculate time until quota reset
                     seconds_until_reset, reset_time = self._calculate_quota_reset_time()
 
+                    # Log total usage across all keys
+                    total_requests = sum(self.usage_counts.values())
                     logger.error(f"❌ ALL {len(self.clients)} API KEYS EXHAUSTED!")
+                    logger.error(f"   Total requests processed: {total_requests}")
+                    for k, count in self.usage_counts.items():
+                        logger.error(f"   {k}: {count} requests")
 
                     # Raise custom exception only when ALL keys are exhausted
                     raise GeminiQuotaExhaustedError(
@@ -531,7 +547,7 @@ A compelling, photorealistic lifestyle image showing the product being used in i
                 else:
                     # Some keys still available - return None to try again with next key
                     remaining_keys = sum(1 for exhausted in self.quota_exhausted.values() if not exhausted)
-                    logger.info(f"📊 {remaining_keys}/{len(self.clients)} API keys still available - continuing with next key")
+                    logger.info(f"📊 {remaining_keys}/{len(self.clients)} API keys still available - switching to next key")
                     return None
 
             # Other errors
