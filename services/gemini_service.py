@@ -203,7 +203,7 @@ class GeminiService:
 
         logger.info(f"✅ Reset quota exhaustion flags for all {len(self.clients)} API keys")
 
-    def edit_product_image(self, original_image_url, product_title, variation="main"):
+    def edit_product_image(self, original_image_url, product_title, variation="main", all_image_urls=None):
         """
         Edit an existing product image using Nano Banana (Gemini 2.5 Flash Image)
         This uses Gemini's image editing capabilities to create variations
@@ -212,6 +212,7 @@ class GeminiService:
             original_image_url: URL of the original product image to edit
             product_title: Product title for context
             variation: Image variation type ("main", "angle1", "angle2")
+            all_image_urls: List of all product image URLs for size/scale context (optional)
 
         Returns:
             str: Base64 data URL of edited image or None if editing fails
@@ -238,13 +239,30 @@ class GeminiService:
 
             logger.info(f"🍌 Nano Banana [{key_name}]: Editing product image for: {product_title} (variation: {variation})")
 
-            # Download original image
+            # Download primary image
             response = requests.get(original_image_url, timeout=10)
             response.raise_for_status()
             image_data = response.content
 
-            # Load image
-            image = Image.open(io.BytesIO(image_data))
+            # Load primary image
+            primary_image = Image.open(io.BytesIO(image_data))
+
+            # Download and load ALL images for context (if provided)
+            context_images = []
+            if all_image_urls and len(all_image_urls) > 1:
+                logger.info(f"📸 Loading {len(all_image_urls)} images for size/scale context...")
+                for idx, img_url in enumerate(all_image_urls):
+                    try:
+                        if img_url != original_image_url:  # Skip primary image (already loaded)
+                            img_response = requests.get(img_url, timeout=10)
+                            img_response.raise_for_status()
+                            context_img = Image.open(io.BytesIO(img_response.content))
+                            context_images.append(context_img)
+                            logger.info(f"   ✅ Loaded context image {idx + 1}/{len(all_image_urls)}")
+                    except Exception as e:
+                        logger.warning(f"   ⚠️ Failed to load context image {idx + 1}: {str(e)}")
+                        # Continue even if some context images fail
+                        continue
 
             # Get variation-specific edit instructions
             edit_instructions = self._get_edit_instructions(variation)
@@ -266,15 +284,54 @@ class GeminiService:
             else:
                 scenario_type = "INDUSTRIAL"
 
-            # Create edit prompt
+            # Create edit prompt with size/scale emphasis
+            size_context = ""
+            if context_images:
+                size_context = f"""
+📏 SIZE & SCALE CONTEXT:
+- You have been provided with {len(all_image_urls)} reference images of this product
+- Analyze ALL images to understand the product's ACTUAL REAL-WORLD SIZE and proportions
+- The product title "{product_title}" indicates the true nature and scale of this product
+- PAY CLOSE ATTENTION to size indicators in the images (people, objects, measurements)
+- Ensure the generated image shows the product at its CORRECT REAL-WORLD SCALE
+- If the product is large (barriers, bollards, parking equipment, industrial items), show it at FULL SIZE
+- If the product is small (tools, accessories), show it at appropriate human-scale
+"""
+
             edit_prompt = f"""You are a professional lifestyle product photographer. Transform this product image into a compelling, real-world application photograph showing the product in use.
 
 PRODUCT: {product_title}
-
+{size_context}
 {edit_instructions}
 
 🎯 PHOTOGRAPHY OBJECTIVE:
 Create a REALISTIC, professional photograph showing this product being used in its INTENDED REAL-WORLD APPLICATION.
+The product SIZE and SCALE must be ACCURATE based on the product title and reference images provided.
+
+⚠️ CRITICAL: PRESERVE THE EXACT PRODUCT APPEARANCE
+🔒 PRODUCT INTEGRITY - MUST NOT CHANGE:
+1. Keep the product's EXACT PHYSICAL DESIGN - do not alter shape, form, or structure
+2. Preserve EXACT COLORS - maintain all original colors of the product precisely
+3. Keep EXACT MATERIALS and textures - metal stays metal, plastic stays plastic, etc.
+4. Maintain EXACT DIMENSIONS and proportions as shown in reference images
+5. Keep ALL PHYSICAL FEATURES - buttons, grooves, edges, patterns exactly as they are
+6. Do NOT redesign, modify, or "improve" the product in any way
+7. The product must be IDENTICAL to the original - only remove text/logos/brands
+
+✅ WHAT YOU CAN CHANGE:
+- The ENVIRONMENT and background (add realistic workplace/lifestyle setting)
+- The LIGHTING and photography angle
+- Add PEOPLE interacting with the product (hands, workers, users)
+- Add CONTEXT objects (tools, vehicles, other environmental items)
+- The SCENARIO showing how the product is used
+
+❌ WHAT YOU CANNOT CHANGE:
+- The product's physical appearance, design, or features
+- The product's colors or materials
+- The product's size or proportions
+- The product's shape or structure
+
+🎯 RESULT: The SAME product in a NEW realistic environment/scenario
 
 SCENARIO TYPE: {scenario_type}
 
@@ -308,6 +365,13 @@ SCENARIO TYPE: {scenario_type}
 3. {"Beautiful, well-maintained environment - NOT overly perfect, naturally inviting" if scenario_type == "LIFESTYLE" else "Genuine work environment - NOT overly clean or staged"}
 4. Realistic lighting with natural shadows
 5. Authentic product proportions and scale relative to human body
+
+🔍 USE ALL REFERENCE IMAGES TO MAINTAIN PRODUCT CONSISTENCY:
+1. Study ALL provided reference images carefully to understand the exact product appearance
+2. Use multiple angles from reference images to maintain accurate product features
+3. Cross-reference all images to ensure color, size, and design consistency
+4. The product in the generated image must match ALL reference images precisely
+5. Multiple reference images help you understand the true product - use them all!
 
 🚫 BRAND & LOGO REMOVAL - CRITICAL:
 1. Remove ALL text from the PRODUCT itself:
@@ -347,10 +411,17 @@ A compelling, photorealistic lifestyle image showing the product being used in i
 
             logger.info(f"Nano Banana edit prompt: {edit_prompt[:120]}...")
 
+            # Build contents list: prompt + primary image + all context images
+            contents = [edit_prompt, primary_image]
+            if context_images:
+                logger.info(f"📸 Adding {len(context_images)} context images to Gemini API request for better size understanding")
+                contents.extend(context_images)
+
             # Use Nano Banana (Gemini 2.5 Flash Image) to edit the image
+            # Pass ALL images so AI can understand true size/scale
             response = client.models.generate_content(
                 model="gemini-2.5-flash-image",
-                contents=[edit_prompt, image],
+                contents=contents,
             )
 
             # Extract edited image from response
@@ -726,11 +797,18 @@ Create a clean, professional product image showing the product in its intended u
 
 ⚠️ CRITICAL: NO WORKERS, NO HANDS, NO TOOLS visible in this image.
 
+🔒 PRESERVE EXACT PRODUCT APPEARANCE:
+- The product itself must remain IDENTICAL to the original reference images
+- Do NOT change the product's color, shape, size, design, or any physical features
+- ONLY change the environment/background/context around the product
+- The product is perfect as-is - DO NOT redesign or modify it
+
 🔧 PRODUCT PRESENTATION:
 - Show the product ALREADY INSTALLED and in use
 - Product functioning as designed in its final, installed state
 - Clean, professional presentation
 - Product should look like it's being used, but WITHOUT people visibly interacting with it
+- The SAME EXACT product from the reference images, just in a real-world setting
 
 🌍 ENVIRONMENT & CONTEXT:
 - Realistic environment relevant to the product
@@ -768,12 +846,19 @@ A professional, clean image showing the product already installed and serving it
 🎯 OBJECTIVE:
 Create a realistic and professional installation scene showing TWO WORKERS in high-visibility clothing actively installing the product.
 
+🔒 PRESERVE EXACT PRODUCT APPEARANCE:
+- The product being installed must be IDENTICAL to the original reference images
+- Do NOT change the product's color, shape, size, design, or any physical features
+- ONLY change the environment/scenario around the product (add workers, tools, workplace)
+- The product is perfect as-is - DO NOT redesign or modify it
+- Show the EXACT SAME product being installed in a realistic workplace setting
+
 👷 WORKERS & CLOTHING:
 - Show TWO workers (not one, not three - exactly two)
 - Workers wearing HIGH-VISIBILITY clothing (bright orange, yellow, or lime green vests/jackets)
 - Professional work attire appropriate for the installation
 - Workers' faces PARTIALLY OUT OF FRAME or NOT CLEARLY VISIBLE
-- Focus on HANDS, TOOLS, and the PRODUCT
+- Focus on HANDS, TOOLS, and the PRODUCT (which must remain unchanged)
 
 🔧 INSTALLATION SCENE:
 - Show the product ON THE GROUND or installation surface
@@ -810,6 +895,83 @@ Create a realistic and professional installation scene showing TWO WORKERS in hi
 
 🎯 FINAL RESULT:
 A professional installation scene showing two workers in high-vis gear actively installing the product, with focus on hands, tools, and the product itself - similar in style to professional installation manuals and corporate documentation.
+""",
+            "application": """
+📸 IMAGE 2: PRODUCT APPLICATION (HANDS APPLYING/USING THE PRODUCT)
+
+🎯 OBJECTIVE:
+Create a realistic scene showing someone actively APPLYING or USING this product in its intended way - appropriate for small items, markers, tape, paint, labels, accessories, etc.
+
+🔒 PRESERVE EXACT PRODUCT APPEARANCE:
+- The product being used must be IDENTICAL to the original reference images
+- Do NOT change the product's color, shape, size, design, or any physical features
+- ONLY show the product being used/applied in a realistic scenario
+- The product is perfect as-is - DO NOT redesign or modify it
+
+🤲 HANDS & APPLICATION:
+- Show HANDS actively applying, using, or handling the product
+- Hands should be in close-up, clearly showing the application process
+- Natural, realistic hand positioning for the specific product type
+- Hands can be wearing work gloves if appropriate (e.g., for industrial markers, tape)
+- Focus on the APPLICATION ACTION - peeling tape, marking floors, applying labels, etc.
+
+🔧 APPLICATION SCENARIOS BY PRODUCT TYPE:
+For FLOOR MARKERS / TAPE / LINES:
+- Show hands applying the marker/tape to a floor surface
+- Display the application process (peeling backing, pressing down, smoothing)
+- Show partially applied product to demonstrate usage
+- Realistic floor surface (concrete, asphalt, warehouse floor)
+
+For PAINT / COATING / SPRAY:
+- Show hands applying paint to appropriate surface
+- May include brush, roller, or spray application
+- Show product container/can being used
+- Realistic application surface
+
+For LABELS / STICKERS / SIGNS:
+- Show hands peeling and applying label
+- Display backing being removed
+- Show application to relevant surface (box, equipment, wall)
+
+For SMALL TOOLS / ACCESSORIES:
+- Show hands using the tool/accessory for its intended purpose
+- Demonstrate proper handling and usage
+- Include any objects the tool interacts with
+
+For SAFETY / PPE ITEMS:
+- Show hands putting on, adjusting, or using the safety item
+- Demonstrate proper usage/placement
+- Show on appropriate body part or location
+
+🌍 ENVIRONMENT & SURFACE:
+- Realistic environment for the product's use case
+- Appropriate surface (floor, wall, equipment, package, etc.)
+- Clean, professional setting
+- Natural or workplace lighting
+- Close-up/macro shot to show detail
+
+📸 COMPOSITION & STYLE:
+- Close-up, detail-focused photography
+- Hands-on demonstration style
+- Clear view of the product being applied/used
+- Professional instructional/tutorial photo quality
+- Sharp focus on hands and product
+- Background slightly blurred to emphasize action
+
+🚫 WHAT NOT TO SHOW:
+- NO heavy machinery or power tools (drills, saws, etc.) unless product specifically requires them
+- NO workers in full high-vis gear (just hands, maybe gloves)
+- NO installation equipment inappropriate for the product
+- NO construction site setting for small/simple products
+- Just hands + product + application surface
+
+🚫 BRANDING:
+- NO brand names or logos on product
+- NO company signage or branded materials
+- Clean product surfaces only
+
+🎯 FINAL RESULT:
+A professional, close-up demonstration photo showing hands actively applying or using the product in its real-world application - clear, instructional, and contextually appropriate for the specific product type.
 """
         }
 

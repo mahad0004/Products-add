@@ -597,19 +597,31 @@ def create_ai_dupes():
                 ai_image_urls = []
                 image_prompt = ""
 
-                # Get first image from source product
-                first_image = source_product.images.first()
-                if not first_image or not first_image.original_url:
-                    logger.error(f"❌ No source image found for product {product_id} - SKIPPING (no fallback allowed)")
-                    errors.append(f"Product {product_id}: No source image available")
+                # Get ALL images from source product for better context
+                all_images = source_product.images.all()
+                if not all_images or len(all_images) == 0:
+                    logger.error(f"❌ No source images found for product {product_id} - SKIPPING (no fallback allowed)")
+                    errors.append(f"Product {product_id}: No source images available")
                     continue
+
+                # Collect all image URLs for context
+                all_image_urls = [img.original_url for img in all_images if img.original_url]
+                if not all_image_urls:
+                    logger.error(f"❌ No valid image URLs for product {product_id} - SKIPPING")
+                    errors.append(f"Product {product_id}: No valid image URLs")
+                    continue
+
+                # Use first image as primary, but pass all images for context
+                primary_image_url = all_image_urls[0]
+                logger.info(f"📸 Found {len(all_image_urls)} image(s) for product - using all for context")
 
                 # Image 1: Product in use (clean, no workers/hands/tools)
                 logger.info(f"Editing Image 1 with Nano Banana: Product in use (clean, no workers)...")
                 edited_url_1 = gemini_service.edit_product_image(
-                    first_image.original_url,
+                    primary_image_url,
                     source_product.title,
-                    variation="product_in_use"
+                    variation="product_in_use",
+                    all_image_urls=all_image_urls  # Pass all images for context
                 )
 
                 if not edited_url_1:
@@ -620,21 +632,55 @@ def create_ai_dupes():
                 ai_image_urls.append(edited_url_1)
                 logger.info(f"✅ Nano Banana: Edited image 1/2 (Product in use - clean)")
 
-                # Image 2: Installation scene with workers in high-vis gear
-                logger.info(f"Editing Image 2 with Nano Banana: Installation scene (workers installing)...")
+                # Image 2: Smart selection between Installation vs Application
+                # Detect product category to choose appropriate second image type
+                product_lower = source_product.title.lower()
+
+                # Products that need APPLICATION scene (hands applying/using)
+                is_application_product = any(keyword in product_lower for keyword in [
+                    'marker', 'tape', 'paint', 'spray', 'coating', 'label', 'sticker',
+                    'sign', 'decal', 'adhesive', 'line', 'stripe', 'mat', 'carpet',
+                    'floor marking', 'road marking', 'safety marking', 'hazard tape',
+                    'warning tape', 'barrier tape', 'floor tape', 'duct tape',
+                    'reflective tape', 'anti-slip', 'grip tape', 'edge protection',
+                    'corner guard', 'foam', 'padding', 'strip', 'seal', 'gasket',
+                    'small', 'mini', 'compact', 'portable', 'handheld', 'accessory'
+                ])
+
+                # Products that need INSTALLATION scene (workers with tools)
+                is_installation_product = any(keyword in product_lower for keyword in [
+                    'bollard', 'barrier', 'post', 'pole', 'column', 'fence', 'gate',
+                    'wheel stop', 'parking block', 'speed bump', 'hump', 'ramp',
+                    'rack', 'stand', 'mounting', 'bracket', 'anchor', 'fixed',
+                    'permanent', 'heavy duty', 'industrial', 'commercial',
+                    'installation', 'assembly required', 'bolt', 'concrete'
+                ])
+
+                # Choose variation based on product type
+                if is_application_product and not is_installation_product:
+                    second_image_variation = "application"
+                    logger.info(f"🎯 Detected application product - using hands-on application scene")
+                else:
+                    second_image_variation = "installation"
+                    logger.info(f"🎯 Detected installation product - using workers installation scene")
+
+                # Image 2: Context-appropriate second image
+                logger.info(f"Editing Image 2 with Nano Banana: {second_image_variation} scene...")
                 edited_url_2 = gemini_service.edit_product_image(
-                    first_image.original_url,
+                    primary_image_url,
                     source_product.title,
-                    variation="installation"
+                    variation=second_image_variation,
+                    all_image_urls=all_image_urls  # Pass all images for context
                 )
 
                 if not edited_url_2:
                     logger.error(f"❌ Gemini edit failed for image 2/2 on product {product_id} - SKIPPING (no fallback allowed)")
-                    errors.append(f"Product {product_id}: Gemini image editing failed (image 2/2 - installation)")
+                    errors.append(f"Product {product_id}: Gemini image editing failed (image 2/2 - {second_image_variation})")
                     continue
 
                 ai_image_urls.append(edited_url_2)
-                logger.info(f"✅ Nano Banana: Edited image 2/2 (Installation scene)")
+                variation_name = "Application scene" if second_image_variation == "application" else "Installation scene"
+                logger.info(f"✅ Nano Banana: Edited image 2/2 ({variation_name})")
 
                 image_prompt = f"Nano Banana edited variations of {source_product.title}"
 
@@ -675,9 +721,31 @@ def create_ai_dupes():
 
                 # Copy ALL variants (prices already doubled in source products from adjust_prices)
                 for variant in source_product.variants:
+                    # FILTER: Skip placeholder variants
+                    variant_title_lower = (variant.title or '').lower()
+                    variant_option1_lower = (variant.option1 or '').lower()
+
+                    placeholder_keywords = [
+                        'please select', 'select option', 'choose', 'select size',
+                        'select color', 'select variant'
+                    ]
+
+                    is_placeholder = any(keyword in variant_title_lower for keyword in placeholder_keywords) or \
+                                   any(keyword in variant_option1_lower for keyword in placeholder_keywords)
+
+                    if is_placeholder:
+                        logger.info(f"⏭️  Skipping placeholder variant when creating AI product: {variant.title}")
+                        continue
+
                     # Source products already have doubled prices from adjust_prices()
                     # No need to double again - just copy the price as-is
                     variant_price = float(variant.price) if variant.price else 0
+
+                    # Skip zero-price variants
+                    if variant_price <= 0.01:
+                        logger.info(f"⏭️  Skipping zero-price variant when creating AI product: {variant.title} (£{variant_price})")
+                        continue
+
                     variant_compare_price = float(variant.compare_at_price) if variant.compare_at_price else None
 
                     # CRITICAL FIX: Parse variant title to extract option values
@@ -1298,9 +1366,31 @@ def process_single_product(source_product, ai_job_id, fast_mode, created_counter
 
             # Copy ALL variants (prices already doubled in source products from adjust_prices)
             for variant in source_product.variants:
+                # FILTER: Skip placeholder variants
+                variant_title_lower = (variant.title or '').lower()
+                variant_option1_lower = (variant.option1 or '').lower()
+
+                placeholder_keywords = [
+                    'please select', 'select option', 'choose', 'select size',
+                    'select color', 'select variant'
+                ]
+
+                is_placeholder = any(keyword in variant_title_lower for keyword in placeholder_keywords) or \
+                               any(keyword in variant_option1_lower for keyword in placeholder_keywords)
+
+                if is_placeholder:
+                    logger.info(f"⏭️  Skipping placeholder variant in AI job: {variant.title}")
+                    continue
+
                 # Source products already have doubled prices from adjust_prices()
                 # No need to double again - just copy the price as-is
                 variant_price = float(variant.price) if variant.price else 0
+
+                # Skip zero-price variants
+                if variant_price <= 0.01:
+                    logger.info(f"⏭️  Skipping zero-price variant in AI job: {variant.title} (£{variant_price})")
+                    continue
+
                 variant_compare_price = float(variant.compare_at_price) if variant.compare_at_price else None
 
                 # CRITICAL FIX: Parse variant title to extract option values

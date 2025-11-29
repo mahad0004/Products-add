@@ -190,7 +190,30 @@ class ProductMapper:
         variants = []
 
         for v in incoming_variants:
+            # FILTER OUT PLACEHOLDER VARIANTS
+            # Skip variants that are clearly placeholders from the source
+            variant_title = str(v.get('title', '')).lower()
+            variant_option1 = str(v.get('option1', '')).lower() if v.get('option1') else ''
+
+            # Check for placeholder text
+            placeholder_keywords = [
+                'please select', 'select option', 'choose', 'select size',
+                'select color', 'select variant', 'default title'
+            ]
+
+            is_placeholder = any(keyword in variant_title for keyword in placeholder_keywords) or \
+                           any(keyword in variant_option1 for keyword in placeholder_keywords)
+
+            if is_placeholder:
+                logger.info(f"⏭️  Skipping placeholder variant: {v.get('title')} (option1: {v.get('option1')})")
+                continue
+
             price = self._extract_price(v, product)
+
+            # Skip variants with zero or near-zero price (likely placeholders)
+            if price <= 0.01:
+                logger.info(f"⏭️  Skipping zero-price variant: {v.get('title')} (price: £{price})")
+                continue
 
             # Compare at price
             compare_at_price = None
@@ -275,6 +298,21 @@ class ProductMapper:
                 # Otherwise, leave option1 unset for single-variant products
 
             variants.append(variant)
+
+        # Ensure we have at least one variant
+        # If all variants were filtered out (all were placeholders), create a default variant
+        if not variants:
+            logger.warning(f"⚠️  All variants were placeholders/invalid - creating default variant")
+            price = self._extract_price({}, product)
+
+            variants = [{
+                'price': f"{price:.2f}",
+                'title': 'Default Title',
+                'requires_shipping': True,
+                'taxable': True,
+                'inventory_management': None,
+                'inventory_policy': 'continue'
+            }]
 
         return variants
 
