@@ -791,6 +791,17 @@ def create_ai_dupes():
                     )
                     db.session.add(ai_variant)
 
+                # Check if any variants were created
+                # If all variants were skipped (zero price or placeholders), skip entire product
+                variant_count = AIProductVariant.query.filter_by(ai_product_id=ai_product.id).count()
+                if variant_count == 0:
+                    logger.error(f"❌ SKIPPING ENTIRE PRODUCT: No valid variants (all had zero/missing price or were placeholders)")
+                    logger.error(f"     Product: {source_product.title} (ID: {source_product.id})")
+                    logger.error(f"     → Fix source product prices before creating AI dupes")
+                    db.session.rollback()
+                    errors.append(f"Product {product_id}: No valid variants (all zero-price or placeholders)")
+                    continue
+
                 # Add AI-generated images
                 for idx, ai_image_url in enumerate(ai_image_urls):
                     ai_image = AIProductImage(
@@ -1439,6 +1450,17 @@ def process_single_product(source_product, ai_job_id, fast_mode, created_counter
                     taxable=variant.taxable
                 )
                 db.session.add(ai_variant)
+
+            # Check if any variants were created
+            # If all variants were skipped (zero price or placeholders), skip entire product
+            variant_count = AIProductVariant.query.filter_by(ai_product_id=ai_product.id).count()
+            if variant_count == 0:
+                logger.error(f"[AI Job {ai_job_id}] ❌ SKIPPING ENTIRE PRODUCT: No valid variants")
+                logger.error(f"     Product: {source_product.title} (ID: {source_product.id})")
+                logger.error(f"     All variants had zero/missing price or were placeholders")
+                logger.error(f"     → Fix source product prices before re-processing")
+                db.session.rollback()
+                continue
 
             # Add AI-generated images
             for img_idx, ai_image_url in enumerate(ai_image_urls):
