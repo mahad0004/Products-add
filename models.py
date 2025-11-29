@@ -246,8 +246,9 @@ class ProductVariant(db.Model):
         }
 
     def to_shopify_format(self):
+        # For single-variant products (no real options), completely omit option fields
+        # This prevents any variant selector from showing in Shopify
         variant = {
-            'title': self.title or 'Default Title',
             'price': self.price,
             'requires_shipping': self.requires_shipping,
             'taxable': self.taxable,
@@ -256,20 +257,20 @@ class ProductVariant(db.Model):
             'fulfillment_service': 'manual'
         }
 
-        # Only include option1 if it has a real value (not Default or Default Title)
-        # This prevents "Option 1: Default" from showing in Shopify
-        if self.option1 and self.option1 not in ['Default', 'Default Title']:
-            variant['option1'] = self.option1
-
         if self.compare_at_price:
             variant['compare_at_price'] = self.compare_at_price
         if self.sku:
             variant['sku'] = self.sku
         if self.barcode:
             variant['barcode'] = self.barcode
-        if self.option2:
+
+        # Only include option fields if they have real values (not Default/Default Title)
+        # This completely hides the variant selector for single-variant products
+        if self.option1 and self.option1 not in ['Default', 'Default Title']:
+            variant['option1'] = self.option1
+        if self.option2 and self.option2 not in ['Default', 'Default Title']:
             variant['option2'] = self.option2
-        if self.option3:
+        if self.option3 and self.option3 not in ['Default', 'Default Title']:
             variant['option3'] = self.option3
 
         return variant
@@ -532,8 +533,9 @@ class AIProductVariant(db.Model):
         }
 
     def to_shopify_format(self):
+        # For single-variant products (no real options), completely omit option fields
+        # This prevents any variant selector from showing in Shopify
         variant = {
-            'title': self.title or 'Default Title',
             'price': self.price,
             'requires_shipping': self.requires_shipping,
             'taxable': self.taxable,
@@ -542,20 +544,20 @@ class AIProductVariant(db.Model):
             'fulfillment_service': 'manual'
         }
 
-        # Only include option1 if it has a real value (not Default or Default Title)
-        # This prevents "Option 1: Default" from showing in Shopify
-        if self.option1 and self.option1 not in ['Default', 'Default Title']:
-            variant['option1'] = self.option1
-
         if self.compare_at_price:
             variant['compare_at_price'] = self.compare_at_price
         if self.sku:
             variant['sku'] = self.sku
         if self.barcode:
             variant['barcode'] = self.barcode
-        if self.option2:
+
+        # Only include option fields if they have real values (not Default/Default Title)
+        # This completely hides the variant selector for single-variant products
+        if self.option1 and self.option1 not in ['Default', 'Default Title']:
+            variant['option1'] = self.option1
+        if self.option2 and self.option2 not in ['Default', 'Default Title']:
             variant['option2'] = self.option2
-        if self.option3:
+        if self.option3 and self.option3 not in ['Default', 'Default Title']:
             variant['option3'] = self.option3
 
         return variant
