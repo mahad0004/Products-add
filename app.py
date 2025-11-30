@@ -1460,7 +1460,7 @@ def process_single_product(source_product, ai_job_id, fast_mode, created_counter
                 logger.error(f"     All variants had zero/missing price or were placeholders")
                 logger.error(f"     → Fix source product prices before re-processing")
                 db.session.rollback()
-                continue
+                return (False, "No valid variants - all zero-price or placeholders")
 
             # Add AI-generated images
             for img_idx, ai_image_url in enumerate(ai_image_urls):
