@@ -260,25 +260,69 @@
     }
 
     async function createAIDupeJob(jobId) {
-        // Ask user if they want to skip products
+        // Step 1: Ask if they want to use default Shopify store
+        const useDefault = confirm('📦 Use default Shopify store?\n\nClick OK to use default store.\nClick Cancel to enter custom Shopify credentials.');
+
+        let customShopifyUrl = null;
+        let customApiKey = null;
+        let customPassword = null;
+
+        // Step 2: If not using default, ask for custom credentials
+        if (!useDefault) {
+            customShopifyUrl = prompt('Enter your Shopify store URL:\n(Example: my-store.myshopify.com)', '');
+            if (!customShopifyUrl) {
+                showAlert('Shopify URL is required', 'error');
+                return;
+            }
+
+            customApiKey = prompt('Enter your Shopify API Key:', '');
+            if (!customApiKey) {
+                showAlert('API Key is required', 'error');
+                return;
+            }
+
+            customPassword = prompt('Enter your Shopify Admin API access token:', '');
+            if (!customPassword) {
+                showAlert('Access token is required', 'error');
+                return;
+            }
+
+            // Confirm custom credentials
+            if (!confirm(`Custom Shopify Store Configuration:\n\nStore: ${customShopifyUrl}\nAPI Key: ${customApiKey.substring(0, 10)}...\n\nContinue?`)) {
+                return;
+            }
+        }
+
+        // Step 3: Ask user if they want to skip products
         const skipProducts = prompt('How many products to skip? (Enter 0 to process all, or 800 to skip first 800)', '0');
         if (skipProducts === null) return; // User cancelled
 
         const productOffset = parseInt(skipProducts) || 0;
 
         const skipMessage = productOffset > 0 ? `\n\nSkipping first ${productOffset} products.` : '';
-        if (!confirm(`This will create AI-enhanced products with OpenAI descriptions + Gemini AI images.${skipMessage}\n\nContinue?`)) {
+        const storeMessage = useDefault ? '\n\nUsing DEFAULT Shopify store.' : `\n\nUsing CUSTOM store: ${customShopifyUrl}`;
+
+        if (!confirm(`This will create AI-enhanced products with OpenAI descriptions + Gemini AI images.${skipMessage}${storeMessage}\n\nContinue?`)) {
             return;
         }
 
         try {
+            const requestBody = {
+                job_id: jobId,
+                product_offset: productOffset
+            };
+
+            // Add custom credentials if provided
+            if (!useDefault) {
+                requestBody.custom_shopify_url = customShopifyUrl;
+                requestBody.custom_api_key = customApiKey;
+                requestBody.custom_password = customPassword;
+            }
+
             const response = await fetch('/api/create-ai-job', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    job_id: jobId,
-                    product_offset: productOffset
-                })
+                body: JSON.stringify(requestBody)
             });
 
             const data = await response.json();

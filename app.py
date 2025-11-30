@@ -849,6 +849,11 @@ def create_ai_job():
         product_limit = data.get('product_limit')  # NEW: Limit number of products to process
         product_offset = data.get('product_offset', 0)  # NEW: Skip first N products
 
+        # Custom Shopify credentials (optional)
+        custom_shopify_url = data.get('custom_shopify_url')
+        custom_api_key = data.get('custom_api_key')
+        custom_password = data.get('custom_password')
+
         if not job_id:
             return jsonify({'error': 'job_id is required'}), 400
 
@@ -868,10 +873,17 @@ def create_ai_job():
             source_job_task_id=scrape_job.task_id,
             status='pending',
             ai_products_created=0,
-            products_pushed=0
+            products_pushed=0,
+            custom_shopify_url=custom_shopify_url,
+            custom_api_key=custom_api_key,
+            custom_password=custom_password
         )
         db.session.add(ai_job)
         db.session.commit()
+
+        # Log if using custom credentials
+        if custom_shopify_url:
+            logger.info(f"AI job {ai_job.id} will use CUSTOM Shopify store: {custom_shopify_url}")
 
         logger.info(f"Created AI job {ai_job.id} for scrape job {job_id} (PRO MODE, product_limit={product_limit}, product_offset={product_offset})")
 
@@ -1974,6 +1986,22 @@ def push_ai_product_to_shopify(ai_product_id):
             logger.warning(f"AI Product {ai_product_id} ({ai_product.title}) has already been pushed to Shopify (ID: {ai_product.shopify_product_id}). Skipping.")
             return True
 
+        # Get AI job to check for custom Shopify credentials
+        ai_job = AIJob.query.get(ai_product.ai_job_id)
+
+        # Use custom Shopify credentials if provided, otherwise use default
+        active_shopify_service = shopify_service  # Default
+
+        if ai_job and ai_job.custom_shopify_url:
+            logger.info(f"🔧 Using CUSTOM Shopify store: {ai_job.custom_shopify_url}")
+            active_shopify_service = ShopifyService(
+                shop_url=ai_job.custom_shopify_url,
+                api_key=ai_job.custom_api_key,
+                password=ai_job.custom_password
+            )
+        else:
+            logger.info(f"🔧 Using DEFAULT Shopify store from .env")
+
         logger.info(f"Pushing AI product to Shopify: {ai_product.title}")
 
         # Convert to Shopify format
@@ -1991,7 +2019,7 @@ def push_ai_product_to_shopify(ai_product_id):
         # DUPLICATE CHECK: Check if product with this title already exists in Shopify (rate-limited)
         with shopify_rate_limiter:
             logger.info(f"🛍️ Shopify: Checking for duplicates...")
-            existing_products = shopify_service.find_products_by_title(shopify_data['title'])
+            existing_products = active_shopify_service.find_products_by_title(shopify_data['title'])
             time.sleep(SHOPIFY_DELAY)  # Delay after Shopify call
 
         if existing_products:
@@ -2007,7 +2035,7 @@ def push_ai_product_to_shopify(ai_product_id):
         # Create product in Shopify (rate-limited)
         with shopify_rate_limiter:
             logger.info(f"🛍️ Shopify: Creating product...")
-            created_product = shopify_service.create_product(shopify_data)
+            created_product = active_shopify_service.create_product(shopify_data)
             time.sleep(SHOPIFY_DELAY)  # Delay after Shopify call
             logger.info(f"✅ Shopify: Product created")
 
@@ -2029,14 +2057,14 @@ def push_ai_product_to_shopify(ai_product_id):
             logger.error(f"❌ CRITICAL: No images found for AI product {ai_product_id} - This should never happen!")
             logger.error(f"   Product should have been rejected during creation. Deleting from Shopify...")
             # Delete the product from Shopify since it has no images
-            shopify_service.delete_product(shopify_product_id)
+            active_shopify_service.delete_product(shopify_product_id)
             return False
 
         logger.info(f"Attaching {len(ai_images)} images to Shopify product")
         for ai_image in ai_images:
             with shopify_rate_limiter:
                 logger.info(f"🛍️ Shopify: Uploading image...")
-                success = shopify_service.add_product_image(shopify_product_id, ai_image.image_url)
+                success = active_shopify_service.add_product_image(shopify_product_id, ai_image.image_url)
                 time.sleep(SHOPIFY_DELAY)  # Delay after Shopify call
                 if success:
                     logger.info(f"✅ Shopify: Image uploaded")
@@ -2047,7 +2075,7 @@ def push_ai_product_to_shopify(ai_product_id):
             if inventory_item_id:
                 with shopify_rate_limiter:
                     logger.info(f"🛍️ Shopify: Disabling inventory tracking...")
-                    shopify_service.disable_inventory_tracking(inventory_item_id)
+                    active_shopify_service.disable_inventory_tracking(inventory_item_id)
                     time.sleep(SHOPIFY_DELAY)  # Delay after Shopify call
 
         # Update AI product status in database
