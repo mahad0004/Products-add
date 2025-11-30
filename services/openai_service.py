@@ -84,7 +84,11 @@ class OpenAIService:
    - Size charts and dimension tables
    - Technical specifications
    - Material specifications (gauge, grade, etc.)
-10. INCLUDE A "DIMENSIONS & SPECIFICATIONS" SECTION in body_html with ALL measurements
+10. CONDITIONAL DIMENSIONS SECTION:
+   - ONLY create dimension tables if the input_description contains actual measurements
+   - Check for patterns: mm, cm, m, inches, kg, lbs, L x W x H, dimensions, specifications
+   - If dimensions exist → Format as professional HTML table
+   - If NO dimensions found → Skip table completely, use regular text or omit section
 11. Do NOT invent new specs - only use what's provided
 12. Use US English
 13. Ensure body_html is 300-1000 words (longer if needed for specs/dimensions)
@@ -105,15 +109,20 @@ class OpenAIService:
    - Emails: any patterns like info at company dot com
    - Websites: URLs like www dot example dot com or https patterns
 
-2. CRITICAL - PRESERVE AND FORMAT ALL PRODUCT INFORMATION:
-   - KEEP ALL dimensions, measurements, sizes (e.g., "1800mm x 600mm", "L x W x H", etc.)
-   - KEEP ALL size charts, dimension tables, specification tables
-   - FORMAT dimensions as professional HTML tables (see examples in system prompt)
-   - FORMAT size charts as clean, styled HTML tables with headers
-   - KEEP ALL technical specifications (weight, capacity, material thickness, etc.)
-   - KEEP ALL compatibility information
+2. CRITICAL - CHECK FOR AND PRESERVE PRODUCT INFORMATION:
+   - FIRST: Check if input_description contains dimensions/measurements (mm, cm, m, kg, lbs, inches, L x W x H, etc.)
+   - IF dimensions exist:
+     * KEEP ALL dimensions, measurements, sizes (e.g., "1800mm x 600mm", "L x W x H", etc.)
+     * KEEP ALL size charts, dimension tables, specification tables
+     * FORMAT dimensions as professional HTML tables (see examples in system prompt)
+     * FORMAT size charts as clean, styled HTML tables with headers
+     * KEEP ALL technical specifications (weight, capacity, material thickness, etc.)
+     * Tables MUST include inline CSS styling for professional appearance
+   - IF NO dimensions exist in input:
+     * Skip dimension tables completely
+     * Use regular paragraphs and bullet points for features
+   - KEEP ALL compatibility information (regardless of dimensions)
    - These are CRITICAL for customers - do NOT remove or abbreviate them
-   - Tables MUST include inline CSS styling for professional appearance
    - Physical addresses: street names, postcodes, city names with addresses
    - Social media: handles and links to social platforms
 
@@ -136,9 +145,9 @@ class OpenAIService:
 4. IMPORTANT - In body_html structure:
    - Include headings (<h2>), paragraphs (<p>), bullet lists (<ul><li>)
 
-   - REQUIRED: Add <h2>Dimensions & Specifications</h2> section with ALL measurements
+   - CONDITIONAL: Only add <h2>Dimensions & Specifications</h2> section if input_description contains measurements
 
-   - FORMAT DIMENSIONS AS HTML TABLE (if multiple dimension values exist):
+   - FORMAT DIMENSIONS AS HTML TABLE (only if dimension data exists in input):
      ```html
      <table style="width:100%; border-collapse:collapse; margin:20px 0;">
        <thead>

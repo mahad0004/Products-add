@@ -172,19 +172,41 @@ class Product(db.Model):
             if variant.get('option3') and variant['option3'] not in ['Default', 'Default Title']:
                 option3_values.add(variant['option3'])
 
+        # Extract option names from original scraped data
+        option_names = ['Option 1', 'Option 2', 'Option 3']  # Fallback
+
+        try:
+            if self.original_data:
+                original = json.loads(self.original_data)
+                if original.get('options') and isinstance(original['options'], list):
+                    # Extract option names from scraped data
+                    scraped_option_names = []
+                    for opt in original['options']:
+                        if isinstance(opt, dict) and opt.get('name'):
+                            scraped_option_names.append(opt['name'])
+                        elif isinstance(opt, str):
+                            scraped_option_names.append(opt)
+
+                    if scraped_option_names:
+                        option_names = scraped_option_names
+                        logger.info(f"✅ Extracted option names from scraped data: {option_names}")
+        except Exception as e:
+            logger.warning(f"⚠️ Could not extract option names from original_data: {e}")
+            # Will use default option_names
+
         # Build options array (only for real variant options)
         if option1_values:
-            options.append({'name': 'Option 1'})
+            options.append({'name': option_names[0] if len(option_names) > 0 else 'Option 1'})
         if option2_values:
-            options.append({'name': 'Option 2'})
+            options.append({'name': option_names[1] if len(option_names) > 1 else 'Option 2'})
         if option3_values:
-            options.append({'name': 'Option 3'})
+            options.append({'name': option_names[2] if len(option_names) > 2 else 'Option 3'})
 
         # If no options, use default Title option
         if not options:
             options = [{'name': 'Title'}]
 
-        logger.info(f"✅ Built {len(options)} option(s) for Shopify")
+        logger.info(f"✅ Built {len(options)} option(s) for Shopify with names: {[o['name'] for o in options]}")
 
         shopify_product = {
             'title': self.title,
@@ -467,19 +489,41 @@ class AIProduct(db.Model):
             if variant.get('option3') and variant['option3'] not in ['Default', 'Default Title']:
                 option3_values.add(variant['option3'])
 
+        # Extract option names from source product's original scraped data
+        option_names = ['Option 1', 'Option 2', 'Option 3']  # Fallback
+
+        try:
+            if self.source_product and self.source_product.original_data:
+                original = json.loads(self.source_product.original_data)
+                if original.get('options') and isinstance(original['options'], list):
+                    # Extract option names from scraped data
+                    scraped_option_names = []
+                    for opt in original['options']:
+                        if isinstance(opt, dict) and opt.get('name'):
+                            scraped_option_names.append(opt['name'])
+                        elif isinstance(opt, str):
+                            scraped_option_names.append(opt)
+
+                    if scraped_option_names:
+                        option_names = scraped_option_names
+                        logger.info(f"✅ Extracted option names from source product: {option_names}")
+        except Exception as e:
+            logger.warning(f"⚠️ Could not extract option names from source product: {e}")
+            # Will use default option_names
+
         # Build options array (only for real variant options)
         if option1_values:
-            options.append({'name': 'Option 1'})
+            options.append({'name': option_names[0] if len(option_names) > 0 else 'Option 1'})
         if option2_values:
-            options.append({'name': 'Option 2'})
+            options.append({'name': option_names[1] if len(option_names) > 1 else 'Option 2'})
         if option3_values:
-            options.append({'name': 'Option 3'})
+            options.append({'name': option_names[2] if len(option_names) > 2 else 'Option 3'})
 
         # If no options, use default Title option
         if not options:
             options = [{'name': 'Title'}]
 
-        logger.info(f"✅ Built {len(options)} option(s) for Shopify")
+        logger.info(f"✅ Built {len(options)} option(s) for Shopify with names: {[o['name'] for o in options]}")
 
         shopify_product = {
             'title': self.title,
