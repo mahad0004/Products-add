@@ -56,9 +56,14 @@ class DatabaseService:
     def save_product(job_id, product_data, enhanced_data=None):
         """Save a scraped product to database"""
         try:
-            # Merge original and enhanced data
+            # Merge original and enhanced data (but preserve mapped options)
             if enhanced_data:
+                # Save the correctly mapped options before merge
+                mapped_options = product_data.get('options', [])
                 product_data = {**product_data, **enhanced_data}
+                # Restore the correctly mapped options (don't let original overwrite)
+                if mapped_options:
+                    product_data['options'] = mapped_options
 
             # Create product
             # Convert tags list to comma-separated string
