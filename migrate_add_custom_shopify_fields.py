@@ -6,7 +6,7 @@ import sqlite3
 import os
 
 def migrate_database():
-    """Add custom_shopify_url, custom_api_key, custom_password columns to ai_jobs table"""
+    """Add custom_shopify_url and custom_access_token columns to ai_jobs table"""
 
     db_path = 'instance/shopify_automation.db'
 
@@ -30,11 +30,8 @@ def migrate_database():
         if 'custom_shopify_url' not in columns:
             fields_to_add.append('custom_shopify_url')
 
-        if 'custom_api_key' not in columns:
-            fields_to_add.append('custom_api_key')
-
-        if 'custom_password' not in columns:
-            fields_to_add.append('custom_password')
+        if 'custom_access_token' not in columns:
+            fields_to_add.append('custom_access_token')
 
         if not fields_to_add:
             print("✅ All custom Shopify fields already exist - no migration needed")
@@ -53,8 +50,7 @@ def migrate_database():
         print("\n✅ Migration completed successfully!")
         print("\nNew columns added:")
         print("   - custom_shopify_url: Store URL for custom Shopify store")
-        print("   - custom_api_key: API key for custom store")
-        print("   - custom_password: Admin API access token for custom store")
+        print("   - custom_access_token: Admin API access token for custom store")
         print("\n💡 Usage: Leave these NULL to use default .env credentials,")
         print("   or set them to use a different Shopify store per AI job")
 

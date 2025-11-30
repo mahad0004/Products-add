@@ -264,8 +264,7 @@
         const useDefault = confirm('📦 Use default Shopify store?\n\nClick OK to use default store.\nClick Cancel to enter custom Shopify credentials.');
 
         let customShopifyUrl = null;
-        let customApiKey = null;
-        let customPassword = null;
+        let customAccessToken = null;
 
         // Step 2: If not using default, ask for custom credentials
         if (!useDefault) {
@@ -275,20 +274,19 @@
                 return;
             }
 
-            customApiKey = prompt('Enter your Shopify API Key:', '');
-            if (!customApiKey) {
-                showAlert('API Key is required', 'error');
-                return;
+            // Add https:// prefix if not present
+            if (!customShopifyUrl.startsWith('http')) {
+                customShopifyUrl = 'https://' + customShopifyUrl;
             }
 
-            customPassword = prompt('Enter your Shopify Admin API access token:', '');
-            if (!customPassword) {
+            customAccessToken = prompt('Enter your Shopify Admin API access token:\n(Example: shpat_...)', '');
+            if (!customAccessToken) {
                 showAlert('Access token is required', 'error');
                 return;
             }
 
             // Confirm custom credentials
-            if (!confirm(`Custom Shopify Store Configuration:\n\nStore: ${customShopifyUrl}\nAPI Key: ${customApiKey.substring(0, 10)}...\n\nContinue?`)) {
+            if (!confirm(`Custom Shopify Store Configuration:\n\nStore: ${customShopifyUrl}\nAccess Token: ${customAccessToken.substring(0, 15)}...\n\nContinue?`)) {
                 return;
             }
         }
@@ -315,8 +313,7 @@
             // Add custom credentials if provided
             if (!useDefault) {
                 requestBody.custom_shopify_url = customShopifyUrl;
-                requestBody.custom_api_key = customApiKey;
-                requestBody.custom_password = customPassword;
+                requestBody.custom_access_token = customAccessToken;
             }
 
             const response = await fetch('/api/create-ai-job', {

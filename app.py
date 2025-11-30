@@ -851,8 +851,7 @@ def create_ai_job():
 
         # Custom Shopify credentials (optional)
         custom_shopify_url = data.get('custom_shopify_url')
-        custom_api_key = data.get('custom_api_key')
-        custom_password = data.get('custom_password')
+        custom_access_token = data.get('custom_access_token')
 
         if not job_id:
             return jsonify({'error': 'job_id is required'}), 400
@@ -875,8 +874,7 @@ def create_ai_job():
             ai_products_created=0,
             products_pushed=0,
             custom_shopify_url=custom_shopify_url,
-            custom_api_key=custom_api_key,
-            custom_password=custom_password
+            custom_access_token=custom_access_token
         )
         db.session.add(ai_job)
         db.session.commit()
@@ -1996,8 +1994,7 @@ def push_ai_product_to_shopify(ai_product_id):
             logger.info(f"🔧 Using CUSTOM Shopify store: {ai_job.custom_shopify_url}")
             active_shopify_service = ShopifyService(
                 shop_url=ai_job.custom_shopify_url,
-                api_key=ai_job.custom_api_key,
-                password=ai_job.custom_password
+                access_token=ai_job.custom_access_token
             )
         else:
             logger.info(f"🔧 Using DEFAULT Shopify store from .env")

@@ -627,8 +627,7 @@ class AIJob(db.Model):
 
     # Custom Shopify credentials (optional - if null, use default from .env)
     custom_shopify_url = db.Column(db.String(255))
-    custom_api_key = db.Column(db.String(255))
-    custom_password = db.Column(db.String(255))
+    custom_access_token = db.Column(db.String(255))
 
     # Relationships
     source_job = db.relationship('ScrapeJob', backref='ai_jobs', foreign_keys=[source_job_id])
