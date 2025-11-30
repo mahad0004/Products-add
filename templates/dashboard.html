@@ -171,11 +171,8 @@
                         <button class="btn btn-secondary" onclick="viewProducts(${job.id})" style="padding: 5px 10px; font-size: 12px; margin-right: 5px;">
                             View Products
                         </button>
-                        <button class="btn" onclick="createAIDupeJob(${job.id}, true)" style="padding: 5px 10px; font-size: 12px; background: #00c8ff; margin-right: 5px;">
-                            ⚡ Fast Mode
-                        </button>
-                        <button class="btn btn-primary" onclick="createAIDupeJob(${job.id}, false)" style="padding: 5px 10px; font-size: 12px; background: #ff00ff;">
-                            🎨 Pro Mode
+                        <button class="btn btn-primary" onclick="createAIDupeJob(${job.id})" style="padding: 5px 10px; font-size: 12px; background: #ff00ff;">
+                            🎨 Create AI Products
                         </button>
                     </td>
                 `;
@@ -253,9 +250,7 @@
         }
     }
 
-    async function createAIDupeJob(jobId, fastMode) {
-        const mode = fastMode ? 'FAST MODE (1 image, no AI edits)' : 'PRO MODE (1 AI-edited image with Nano Banana)';
-
+    async function createAIDupeJob(jobId) {
         // Ask user if they want to skip products
         const skipProducts = prompt('How many products to skip? (Enter 0 to process all, or 800 to skip first 800)', '0');
         if (skipProducts === null) return; // User cancelled
@@ -263,7 +258,7 @@
         const productOffset = parseInt(skipProducts) || 0;
 
         const skipMessage = productOffset > 0 ? `\n\nSkipping first ${productOffset} products.` : '';
-        if (!confirm(`This will create AI-enhanced versions using ${mode}.${skipMessage}\n\nContinue?`)) {
+        if (!confirm(`This will create AI-enhanced products with OpenAI descriptions + Gemini AI images.${skipMessage}\n\nContinue?`)) {
             return;
         }
 
@@ -273,7 +268,6 @@
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
                     job_id: jobId,
-                    fast_mode: fastMode,
                     product_offset: productOffset
                 })
             });

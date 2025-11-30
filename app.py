@@ -846,7 +846,6 @@ def create_ai_job():
     try:
         data = request.get_json()
         job_id = data.get('job_id')
-        fast_mode = data.get('fast_mode', False)  # NEW: Skip AI image generation if True
         product_limit = data.get('product_limit')  # NEW: Limit number of products to process
         product_offset = data.get('product_offset', 0)  # NEW: Skip first N products
 
@@ -874,19 +873,17 @@ def create_ai_job():
         db.session.add(ai_job)
         db.session.commit()
 
-        logger.info(f"Created AI job {ai_job.id} for scrape job {job_id} (fast_mode={fast_mode}, product_limit={product_limit}, product_offset={product_offset})")
+        logger.info(f"Created AI job {ai_job.id} for scrape job {job_id} (PRO MODE, product_limit={product_limit}, product_offset={product_offset})")
 
-        # Start AI processing in background with fast_mode option
-        executor.submit(process_ai_job_async, ai_job.id, fast_mode, product_limit, product_offset)
+        # Start AI processing in background (always Pro Mode with AI images)
+        executor.submit(process_ai_job_async, ai_job.id, False, product_limit, product_offset)
 
-        mode_message = " (FAST MODE - 1 image, no AI)" if fast_mode else f" (PRO MODE - {PARALLEL_WORKERS} parallel workers, rate-limited)"
         limit_message = f" - Testing with {product_limit} products" if product_limit else ""
         skip_message = f" - Skipping first {product_offset} products" if product_offset else ""
         return jsonify({
-            'message': f'AI job created successfully for scrape job {job_id}{mode_message}{limit_message}{skip_message}',
+            'message': f'AI job created successfully for scrape job {job_id} (PRO MODE - {PARALLEL_WORKERS} parallel workers){limit_message}{skip_message}',
             'ai_job_id': ai_job.id,
             'status': 'started',
-            'fast_mode': fast_mode,
             'product_limit': product_limit,
             'product_offset': product_offset
         })
@@ -944,26 +941,17 @@ def resume_ai_job(ai_job_id):
         ai_job.error_message = None
         db.session.commit()
 
-        # Determine fast_mode from existing AI products (if any exist)
-        fast_mode = False
-        if processed_count > 0:
-            sample_product = AIProduct.query.filter_by(ai_job_id=ai_job_id).first()
-            if sample_product:
-                # Fast mode has 1 image, Pro mode has 2
-                image_count = AIProductImage.query.filter_by(ai_product_id=sample_product.id).count()
-                fast_mode = (image_count == 1)
-
         # Start AI processing in background (will skip already-processed products)
-        executor.submit(process_ai_job_async, ai_job_id, fast_mode, None)
+        # Always use Pro Mode (fast_mode=False)
+        executor.submit(process_ai_job_async, ai_job_id, False, None)
 
-        mode_name = "FAST MODE" if fast_mode else "PRO MODE"
         return jsonify({
-            'message': f'AI job {ai_job_id} resumed successfully',
+            'message': f'AI job {ai_job_id} resumed successfully (PRO MODE)',
             'ai_job_id': ai_job_id,
             'status': 'started',
             'already_processed': processed_count,
             'remaining': remaining,
-            'mode': mode_name
+            'mode': 'PRO MODE'
         })
 
     except Exception as e:
@@ -1276,77 +1264,66 @@ def process_single_product(source_product, ai_job_id, fast_mode, created_counter
             ai_image_urls = []
             image_prompt = ""
 
-            if fast_mode:
-                # ⚡ FAST MODE: Skip AI image generation, use 1 original image only
-                first_image = source_product.images.first()
-                if first_image and first_image.original_url:
-                    ai_image_urls.append(first_image.original_url)
-                else:
-                    ai_image_urls = [
-                        f"https://dummyimage.com/800x800/4A90E2/ffffff.png&text=Fast+Mode+Image"
-                    ]
-                image_prompt = f"Product: {source_product.title}"
-            else:
-                # 🍌 PRO MODE: Edit images with Nano Banana (rate-limited)
-                # NO FALLBACKS - If Gemini fails, product creation fails
-                first_image = source_product.images.first()
-                if not first_image or not first_image.original_url:
-                    error_msg = "No source image available - cannot create product without images"
-                    logger.error(f"[AI Job {ai_job_id}] ❌ {error_msg}")
-                    return (False, error_msg)
+            # 🍌 PRO MODE: Edit images with Nano Banana (rate-limited)
+            # NO FALLBACKS - If Gemini fails, product creation fails
+            first_image = source_product.images.first()
+            if not first_image or not first_image.original_url:
+                error_msg = "No source image available - cannot create product without images"
+                logger.error(f"[AI Job {ai_job_id}] ❌ {error_msg}")
+                return (False, error_msg)
 
-                # Edit TWO professional product images (rate-limited)
-                # Image 1: Product in use (clean, no workers)
-                try:
-                    with gemini_rate_limiter:
-                        logger.info(f"[AI Job {ai_job_id}] 🍌 Nano Banana: Editing image 1/2 (Product in use - clean)...")
-                        edited_url_1 = gemini_service.edit_product_image(
-                            first_image.original_url,
-                            source_product.title,
-                            variation="product_in_use"
-                        )
-                        time.sleep(GEMINI_DELAY)  # Delay after Gemini call
-                except GeminiQuotaExhaustedError as e:
-                    # Quota exhausted - propagate the error up to be handled by process_ai_job_async
-                    error_msg = f"Gemini quota exhausted: {str(e)}"
-                    logger.error(f"[AI Job {ai_job_id}] ❌ {error_msg}")
-                    raise  # Re-raise to be caught by process_ai_job_async
+            # Edit TWO professional product images (rate-limited)
+            # Image 1: Product in use (clean, no workers)
+            try:
+                with gemini_rate_limiter:
+                    logger.info(f"[AI Job {ai_job_id}] 🍌 Nano Banana: Editing image 1/2 (Product in use - clean)...")
+                    edited_url_1 = gemini_service.edit_product_image(
+                        first_image.original_url,
+                        source_product.title,
+                        variation="product_in_use"
+                    )
+                    time.sleep(GEMINI_DELAY)  # Delay after Gemini call
+            except GeminiQuotaExhaustedError as e:
+                # Quota exhausted - propagate the error up to be handled by process_ai_job_async
+                error_msg = f"Gemini quota exhausted: {str(e)}"
+                logger.error(f"[AI Job {ai_job_id}] ❌ {error_msg}")
+                raise  # Re-raise to be caught by process_ai_job_async
 
-                # CRITICAL: If Gemini fails, STOP - do NOT create product
-                if not edited_url_1:
-                    error_msg = "Gemini image editing failed (image 1/2) - SKIPPING product (no fallback allowed)"
-                    logger.error(f"[AI Job {ai_job_id}] ❌ {error_msg}")
-                    return (False, error_msg)
+            # CRITICAL: If Gemini fails, STOP - do NOT create product
+            if not edited_url_1:
+                error_msg = "Gemini image editing failed (image 1/2) - SKIPPING product (no fallback allowed)"
+                logger.error(f"[AI Job {ai_job_id}] ❌ {error_msg}")
+                return (False, error_msg)
 
-                ai_image_urls.append(edited_url_1)
-                logger.info(f"[AI Job {ai_job_id}] ✅ Nano Banana: Image 1/2 edited successfully (Product in use)")
+            ai_image_urls.append(edited_url_1)
+            logger.info(f"[AI Job {ai_job_id}] ✅ Nano Banana: Image 1/2 edited successfully (Product in use)")
 
-                # Image 2: Installation scene with workers
-                try:
-                    with gemini_rate_limiter:
-                        logger.info(f"[AI Job {ai_job_id}] 🍌 Nano Banana: Editing image 2/2 (Installation scene)...")
-                        edited_url_2 = gemini_service.edit_product_image(
-                            first_image.original_url,
-                            source_product.title,
-                            variation="installation"
-                        )
-                        time.sleep(GEMINI_DELAY)  # Delay after Gemini call
-                except GeminiQuotaExhaustedError as e:
-                    # Quota exhausted - propagate the error up to be handled by process_ai_job_async
-                    error_msg = f"Gemini quota exhausted: {str(e)}"
-                    logger.error(f"[AI Job {ai_job_id}] ❌ {error_msg}")
-                    raise  # Re-raise to be caught by process_ai_job_async
+            # Image 2: Installation scene with workers
+            try:
+                with gemini_rate_limiter:
+                    logger.info(f"[AI Job {ai_job_id}] 🍌 Nano Banana: Editing image 2/2 (Installation scene)...")
+                    edited_url_2 = gemini_service.edit_product_image(
+                        first_image.original_url,
+                        source_product.title,
+                        variation="installation"
+                    )
+                    time.sleep(GEMINI_DELAY)  # Delay after Gemini call
+            except GeminiQuotaExhaustedError as e:
+                # Quota exhausted - propagate the error up to be handled by process_ai_job_async
+                error_msg = f"Gemini quota exhausted: {str(e)}"
+                logger.error(f"[AI Job {ai_job_id}] ❌ {error_msg}")
+                raise  # Re-raise to be caught by process_ai_job_async
 
-                # CRITICAL: If Gemini fails, STOP - do NOT create product
-                if not edited_url_2:
-                    error_msg = "Gemini image editing failed (image 2/2) - SKIPPING product (no fallback allowed)"
-                    logger.error(f"[AI Job {ai_job_id}] ❌ {error_msg}")
-                    return (False, error_msg)
+            # CRITICAL: If Gemini fails, STOP - do NOT create product
+            if not edited_url_2:
+                error_msg = "Gemini image editing failed (image 2/2) - SKIPPING product (no fallback allowed)"
+                logger.error(f"[AI Job {ai_job_id}] ❌ {error_msg}")
+                return (False, error_msg)
 
-                ai_image_urls.append(edited_url_2)
-                logger.info(f"[AI Job {ai_job_id}] ✅ Nano Banana: Image 2/2 edited successfully (Installation scene)")
+            ai_image_urls.append(edited_url_2)
+            logger.info(f"[AI Job {ai_job_id}] ✅ Nano Banana: Image 2/2 edited successfully (Installation scene)")
 
-                image_prompt = f"Nano Banana edited variations of {source_product.title}"
+            image_prompt = f"Nano Banana edited variations of {source_product.title}"
 
             # STEP 3: Create AI product in database
             # Get existing tags and add source URL if provided
@@ -1520,8 +1497,7 @@ def process_ai_job_async(ai_job_id, fast_mode=False, product_limit=None, product
                 logger.error(f"AI Job {ai_job_id} not found")
                 return
 
-            mode_msg = f"⚡ FAST MODE - Sequential" if fast_mode else f"🎨 PRO MODE - Parallel ({PARALLEL_WORKERS} workers)"
-            logger.info(f"[AI Job {ai_job_id}] Starting AI processing - {mode_msg}")
+            logger.info(f"[AI Job {ai_job_id}] Starting AI processing - 🎨 PRO MODE - Parallel ({PARALLEL_WORKERS} workers)")
 
             # Update status to running
             ai_job.status = 'running'
@@ -1573,71 +1549,54 @@ def process_ai_job_async(ai_job_id, fast_mode=False, product_limit=None, product
             failed_due_to_quota = []
             quota_exhausted = False
 
-            if fast_mode:
-                # FAST MODE: Sequential processing (original code)
-                for idx, source_product in enumerate(products, 1):
+            # PRO MODE: Parallel processing with ThreadPoolExecutor
+            logger.info(f"[AI Job {ai_job_id}] 🚀 Starting parallel processing with {PARALLEL_WORKERS} workers")
+
+            with ThreadPoolExecutor(max_workers=PARALLEL_WORKERS) as parallel_executor:
+                # Submit all products for parallel processing
+                future_to_product = {
+                    parallel_executor.submit(
+                        process_single_product,
+                        product,
+                        ai_job_id,
+                        False,  # Always Pro Mode
+                        created_counter,
+                        pushed_counter,
+                        source_job.source_url
+                    ): product for product in products
+                }
+
+                # Process results as they complete
+                completed = 0
+                for future in as_completed(future_to_product):
+                    completed += 1
+                    product = future_to_product[future]
                     try:
-                        success, error = process_single_product(
-                            source_product, ai_job_id, fast_mode, created_counter, pushed_counter, source_job.source_url
-                        )
-                        logger.info(f"[AI Job {ai_job_id}] Progress: {idx}/{len(products)}")
+                        success, error = future.result()
+                        if not success:
+                            logger.error(f"[AI Job {ai_job_id}] Failed: {product.title} - {error}")
                     except GeminiQuotaExhaustedError as e:
-                        # Quota exhausted - stop processing and wait until midnight
-                        logger.error(f"[AI Job {ai_job_id}] ⚠️ QUOTA EXHAUSTED at product {idx}/{len(products)}")
+                        # Quota exhausted - cancel remaining tasks
+                        logger.error(f"[AI Job {ai_job_id}] ⚠️ QUOTA EXHAUSTED at product {completed}/{len(products)}")
+                        logger.error(f"   Error: {str(e)}")
                         quota_exhausted = True
-                        # Track remaining products for retry
-                        failed_due_to_quota.extend(products[idx-1:])
-                        break
+                        # Track this product and any remaining products for retry
+                        failed_due_to_quota.append(product)
+                        # Note: ThreadPoolExecutor will finish running tasks, we just track failures
+                    except Exception as e:
+                        logger.error(f"[AI Job {ai_job_id}] Exception processing {product.title}: {str(e)}")
 
-            else:
-                # PRO MODE: Parallel processing with ThreadPoolExecutor
-                logger.info(f"[AI Job {ai_job_id}] 🚀 Starting parallel processing with {PARALLEL_WORKERS} workers")
+                    # Log progress every 10 products
+                    if completed % 10 == 0:
+                        logger.info(f"[AI Job {ai_job_id}] Progress: {completed}/{len(products)} products completed")
 
-                with ThreadPoolExecutor(max_workers=PARALLEL_WORKERS) as parallel_executor:
-                    # Submit all products for parallel processing
-                    future_to_product = {
-                        parallel_executor.submit(
-                            process_single_product,
-                            product,
-                            ai_job_id,
-                            fast_mode,
-                            created_counter,
-                            pushed_counter,
-                            source_job.source_url
-                        ): product for product in products
-                    }
-
-                    # Process results as they complete
-                    completed = 0
-                    for future in as_completed(future_to_product):
-                        completed += 1
-                        product = future_to_product[future]
-                        try:
-                            success, error = future.result()
-                            if not success:
-                                logger.error(f"[AI Job {ai_job_id}] Failed: {product.title} - {error}")
-                        except GeminiQuotaExhaustedError as e:
-                            # Quota exhausted - cancel remaining tasks
-                            logger.error(f"[AI Job {ai_job_id}] ⚠️ QUOTA EXHAUSTED at product {completed}/{len(products)}")
-                            logger.error(f"   Error: {str(e)}")
-                            quota_exhausted = True
-                            # Track this product and any remaining products for retry
-                            failed_due_to_quota.append(product)
-                            # Note: ThreadPoolExecutor will finish running tasks, we just track failures
-                        except Exception as e:
-                            logger.error(f"[AI Job {ai_job_id}] Exception processing {product.title}: {str(e)}")
-
-                        # Log progress every 10 products
-                        if completed % 10 == 0:
-                            logger.info(f"[AI Job {ai_job_id}] Progress: {completed}/{len(products)} products completed")
-
-                        # If quota exhausted, track remaining products in queue as failed
-                        if quota_exhausted:
-                            # All remaining products that haven't been processed yet
-                            for fut, prod in future_to_product.items():
-                                if fut != future and not fut.done():
-                                    failed_due_to_quota.append(prod)
-                            break  # Exit the loop early
+                    # If quota exhausted, track remaining products in queue as failed
+                    if quota_exhausted:
+                        # All remaining products that haven't been processed yet
+                        for fut, prod in future_to_product.items():
+                            if fut != future and not fut.done():
+                                failed_due_to_quota.append(prod)
+                        break  # Exit the loop early
 
             # If quota was exhausted, wait until midnight Pacific and retry failed products
             if quota_exhausted and failed_due_to_quota:
