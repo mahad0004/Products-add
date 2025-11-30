@@ -220,10 +220,19 @@
                             👁️ View
                         </button>
                     `;
-                } else if (aiJob.status === 'completed' || aiJob.status === 'running') {
+                } else if (aiJob.status === 'completed') {
                     actionButtons = `
                         <button class="btn btn-primary" onclick="viewAIJob(${aiJob.id})" style="padding: 5px 10px; font-size: 12px;">
                             🚀 View & Push
+                        </button>
+                    `;
+                } else if (aiJob.status === 'running') {
+                    actionButtons = `
+                        <button class="btn btn-danger" onclick="stopAIJob(${aiJob.id})" style="padding: 5px 10px; font-size: 12px; background: #dc3545; margin-right: 5px;">
+                            ⏹️ Stop
+                        </button>
+                        <button class="btn btn-secondary" onclick="viewAIJob(${aiJob.id})" style="padding: 5px 10px; font-size: 12px;">
+                            👁️ View
                         </button>
                     `;
                 } else {
@@ -311,6 +320,32 @@
 
             if (response.ok) {
                 showAlert(`Job resumed: ${data.already_processed} already processed, ${data.remaining} remaining (${data.mode})`, 'success');
+                // Reload AI jobs to show updated status
+                loadAIJobs();
+                loadStats();
+            } else {
+                showAlert(data.error, 'error');
+            }
+        } catch (error) {
+            showAlert('Error: ' + error.message, 'error');
+        }
+    }
+
+    async function stopAIJob(aiJobId) {
+        if (!confirm('⚠️ This will stop the AI job execution. Products already processed will be saved. Continue?')) {
+            return;
+        }
+
+        try {
+            const response = await fetch(`/api/stop-ai-job/${aiJobId}`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' }
+            });
+
+            const data = await response.json();
+
+            if (response.ok) {
+                showAlert(`Job stopped: ${data.products_processed} products processed, ${data.products_remaining} remaining`, 'success');
                 // Reload AI jobs to show updated status
                 loadAIJobs();
                 loadStats();

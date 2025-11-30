@@ -959,6 +959,49 @@ def resume_ai_job(ai_job_id):
         return jsonify({'error': str(e)}), 500
 
 
+@app.route('/api/stop-ai-job/<int:ai_job_id>', methods=['POST'])
+@login_required
+def stop_ai_job(ai_job_id):
+    """Stop a running AI job"""
+    try:
+        # Get the AI job
+        ai_job = AIJob.query.get(ai_job_id)
+        if not ai_job:
+            return jsonify({'error': 'AI job not found'}), 404
+
+        # Check if job is running
+        if ai_job.status != 'running':
+            return jsonify({'error': f'Job is not running (current status: {ai_job.status})'}), 400
+
+        # Get counts
+        processed_count = AIProduct.query.filter_by(ai_job_id=ai_job_id).count()
+        source_job = ScrapeJob.query.get(ai_job.source_job_id)
+        total_products = Product.query.filter_by(job_id=source_job.id).count() if source_job else 0
+        remaining = total_products - processed_count
+
+        logger.info(f"Stopping AI job {ai_job_id}: {processed_count} processed, {remaining} remaining")
+
+        # Update job status to stopped
+        ai_job.status = 'stopped'
+        ai_job.error_message = 'Manually stopped by user'
+        db.session.commit()
+
+        # Note: The background thread will check the status and stop processing
+        # at the next opportunity (between products)
+
+        return jsonify({
+            'message': f'AI job {ai_job_id} stopped successfully',
+            'ai_job_id': ai_job_id,
+            'status': 'stopped',
+            'products_processed': processed_count,
+            'products_remaining': remaining
+        })
+
+    except Exception as e:
+        logger.error(f"Error stopping AI job: {str(e)}", exc_info=True)
+        return jsonify({'error': str(e)}), 500
+
+
 @app.route('/api/ai-products/bulk-action', methods=['POST'])
 @login_required
 def ai_bulk_action():
@@ -1592,6 +1635,16 @@ def process_ai_job_async(ai_job_id, fast_mode=False, product_limit=None, product
                     # Log progress every 10 products
                     if completed % 10 == 0:
                         logger.info(f"[AI Job {ai_job_id}] Progress: {completed}/{len(products)} products completed")
+
+                    # Check if job was stopped by user
+                    db.session.refresh(ai_job)
+                    if ai_job.status == 'stopped':
+                        logger.info(f"[AI Job {ai_job_id}] ⏹️ Job stopped by user at {completed}/{len(products)} products")
+                        # Cancel remaining futures
+                        for fut, prod in future_to_product.items():
+                            if fut != future and not fut.done():
+                                fut.cancel()
+                        break  # Exit the loop
 
                     # If quota exhausted, track remaining products in queue as failed
                     if quota_exhausted:
