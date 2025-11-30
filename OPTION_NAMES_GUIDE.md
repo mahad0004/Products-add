@@ -43,20 +43,23 @@ Create an AI job and push products to Shopify. Check the Shopify product page - 
 
 ### Problem: Still seeing "Option 1", "Option 2", "Option 3"
 
-**Cause:** The Apify actor `autofacts~shopify` might not support our new configuration flags.
+**Cause:** The Apify actor `autofacts~shopify` did not support full product schema extraction.
 
-**Solution Options:**
+**Solution Applied:**
 
-#### Option A: Switch to a Better Apify Actor
+#### ✅ Switched to Better Apify Actor
 
-Use `hoppr~shopify-scraper` instead:
+**ALREADY IMPLEMENTED** - Now using `hoppr~shopify-scraper`:
 
-1. Update `services/apify_service.py` line 19:
+1. Updated `services/apify_service.py` line 20:
    ```python
    self.actor_id = "hoppr~shopify-scraper"
    ```
 
-2. This actor extracts full Shopify product JSON including option names
+2. This actor extracts full Shopify product JSON from the native Shopify API including:
+   - Product option names (e.g., "Size", "Color", "Material")
+   - Complete variant data
+   - All product metadata
 
 #### Option B: Use Custom JavaScript Extractor
 
@@ -139,6 +142,6 @@ This verifies our code works correctly when option names are provided.
 | ✅ Database Schema | Ready (option name columns added) |
 | ✅ Code Implementation | Complete (extracts & stores names) |
 | ✅ Shopify Export | Working (uses stored names) |
-| ⚠️ Apify Scraper | **Needs configuration update** |
+| ✅ Apify Scraper | **UPDATED to hoppr~shopify-scraper** |
 
-**Next Step:** Configure Apify to capture option names, then test with a new scrape job!
+**Next Step:** Run a NEW scrape job to test the updated Apify actor and verify option names are captured!

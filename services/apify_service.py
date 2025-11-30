@@ -16,7 +16,8 @@ class ApifyService:
     def __init__(self, api_token):
         self.api_token = api_token
         self.base_url = "https://api.apify.com/v2"
-        self.actor_id = "autofacts~shopify"
+        # Using hoppr~shopify-scraper for full product schema extraction including option names
+        self.actor_id = "hoppr~shopify-scraper"
 
     def start_scraper(self, shopify_url, max_results=200):
         """
@@ -31,6 +32,7 @@ class ApifyService:
         }
 
         # Configure scraper with UK proxy for accurate pricing and availability
+        # hoppr~shopify-scraper uses Shopify's native JSON API for complete product data
         payload = {
             "startUrls": [{"url": shopify_url}],
             "proxy": {
@@ -38,39 +40,19 @@ class ApifyService:
                 "apifyProxyGroups": ["RESIDENTIAL"],
                 "apifyProxyCountry": "GB"  # 🇬🇧 UK proxy for GBP pricing
             },
-            "crawlerType": "playwright:chrome",
-            "sameDomain": True,
-            "useSitemaps": True,
-            "maxPages": 30000,
-            "maxDepth": 7,
-            "maxResultRecords": max_results,
-            "requestDelayMs": 1000,
-            "maxConcurrency": 1,
-            "requestTimeoutSecs": 120,
-            "scrapeProducts": True,
-            "scrapeCollections": True,
+            "maxRequestsPerCrawl": max_results,
+            "maxConcurrency": 5,
+            "maxRequestRetries": 3,
+            "proxyConfiguration": {
+                "useApifyProxy": True,
+                "apifyProxyGroups": ["RESIDENTIAL"],
+                "apifyProxyCountry": "GB"
+            },
+            # Extract full product data including option names from Shopify JSON API
+            "scrapeProductDetails": True,
             "scrapeVariants": True,
-            "downloadFiles": False,
-            "downloadCss": False,
-            "downloadMedia": False,
-            "saveMarkdown": True,
-            "saveHtml": True,
-            "saveScreenshots": False,
-            # 🎯 NEW: Request full product JSON including option names
-            "extractProductJson": True,  # Extract full Shopify product JSON
-            "extractVariantOptions": True,  # Ensure variant options are captured
-            "excludeUrlGlobs": [
-                "**/cart",
-                "**/checkout",
-                "**/customer",
-                "**/account",
-                "**/privacy",
-                "**/terms",
-                "**/media",
-                "**/static",
-                "**/search",
-                "**/blog"
-            ]
+            "scrapeImages": True,
+            "includeProductJson": True  # 🎯 This ensures we get the full product.options array
         }
 
         try:
@@ -81,6 +63,7 @@ class ApifyService:
             run_id = data.get('data', {}).get('id')
 
             logger.info(f"✅ Apify scraper started successfully: {run_id}")
+            logger.info(f"🔧 Using hoppr~shopify-scraper for full product schema extraction")
             logger.info(f"🇬🇧 Using UK residential proxy for GBP pricing and UK-specific content")
             return run_id
 
