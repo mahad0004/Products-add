@@ -324,6 +324,13 @@ class ProductMapper:
 
         option_map = {}
 
+        # Try to extract from _original.source first (full Shopify JSON)
+        if not options_data and product.get('_original', {}).get('source', {}).get('options'):
+            logger.info("🔍 Trying to extract option names from _original.source")
+            source_options = product.get('_original', {}).get('source', {}).get('options', [])
+            if isinstance(source_options, list):
+                options_data = source_options
+
         # Parse from product options
         if isinstance(options_data, list):
             for opt in options_data:
@@ -338,6 +345,7 @@ class ProductMapper:
 
                     if name not in option_map:
                         option_map[name] = set(values)
+                        logger.info(f"✅ Found option name: '{name}' with {len(values)} values")
                     else:
                         option_map[name].update(values)
 

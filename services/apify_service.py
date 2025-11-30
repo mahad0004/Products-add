@@ -56,6 +56,9 @@ class ApifyService:
             "saveMarkdown": True,
             "saveHtml": True,
             "saveScreenshots": False,
+            # 🎯 NEW: Request full product JSON including option names
+            "extractProductJson": True,  # Extract full Shopify product JSON
+            "extractVariantOptions": True,  # Ensure variant options are captured
             "excludeUrlGlobs": [
                 "**/cart",
                 "**/checkout",
