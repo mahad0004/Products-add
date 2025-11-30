@@ -106,6 +106,8 @@ class DatabaseService:
             # Save variants
             variants_data = product_data.get('variants', [])
             logger.info(f"DEBUG: Saving {len(variants_data)} variants for product '{product_data.get('title', 'Unknown')}'")
+            valid_variants_saved = 0
+
             for variant_data in variants_data:
                 # Extract price - handle both string and dict formats
                 price_data = variant_data.get('price', '0.00')
@@ -113,6 +115,16 @@ class DatabaseService:
                     price_data = str(price_data.get('current', 0))
                 elif isinstance(price_data, (int, float)):
                     price_data = str(price_data)
+
+                # CRITICAL: Skip zero-price variants - DO NOT SAVE to database
+                try:
+                    price_float = float(price_data)
+                    if price_float <= 0.01:
+                        logger.warning(f"⏭️  SKIPPING zero-price variant: {variant_data.get('title')} (Price: £{price_float})")
+                        continue
+                except (ValueError, TypeError):
+                    logger.warning(f"⏭️  SKIPPING variant with invalid price: {variant_data.get('title')}")
+                    continue
 
                 # Extract compare_at_price - handle both string and dict formats
                 compare_at_price_data = variant_data.get('compare_at_price')
@@ -135,6 +147,17 @@ class DatabaseService:
                     taxable=variant_data.get('taxable', True)
                 )
                 db.session.add(variant)
+                valid_variants_saved += 1
+
+            # CRITICAL: If no valid variants were saved, delete the product and skip
+            if valid_variants_saved == 0:
+                logger.error(f"❌ SKIPPING ENTIRE PRODUCT: No valid variants (all zero-price or invalid)")
+                logger.error(f"   Product: {product.title}")
+                db.session.delete(product)
+                db.session.flush()
+                return None
+
+            logger.info(f"✅ Saved {valid_variants_saved} valid variant(s) for product '{product.title}'")
 
             # Save images
             images_data = product_data.get('images', [])
