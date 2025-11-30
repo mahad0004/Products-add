@@ -16,8 +16,8 @@ class ApifyService:
     def __init__(self, api_token):
         self.api_token = api_token
         self.base_url = "https://api.apify.com/v2"
-        # Using hoppr~shopify-scraper for full product schema extraction including option names
-        self.actor_id = "hoppr~shopify-scraper"
+        # Using autofacts~shopify - reliable and tested actor
+        self.actor_id = "autofacts~shopify"
 
     def start_scraper(self, shopify_url, max_results=200):
         """
@@ -32,7 +32,6 @@ class ApifyService:
         }
 
         # Configure scraper with UK proxy for accurate pricing and availability
-        # hoppr~shopify-scraper uses Shopify's native JSON API for complete product data
         payload = {
             "startUrls": [{"url": shopify_url}],
             "proxy": {
@@ -40,19 +39,36 @@ class ApifyService:
                 "apifyProxyGroups": ["RESIDENTIAL"],
                 "apifyProxyCountry": "GB"  # 🇬🇧 UK proxy for GBP pricing
             },
-            "maxRequestsPerCrawl": max_results,
-            "maxConcurrency": 5,
-            "maxRequestRetries": 3,
-            "proxyConfiguration": {
-                "useApifyProxy": True,
-                "apifyProxyGroups": ["RESIDENTIAL"],
-                "apifyProxyCountry": "GB"
-            },
-            # Extract full product data including option names from Shopify JSON API
-            "scrapeProductDetails": True,
+            "crawlerType": "playwright:chrome",
+            "sameDomain": True,
+            "useSitemaps": True,
+            "maxPages": 30000,
+            "maxDepth": 7,
+            "maxResultRecords": max_results,
+            "requestDelayMs": 1000,
+            "maxConcurrency": 1,
+            "requestTimeoutSecs": 120,
+            "scrapeProducts": True,
+            "scrapeCollections": True,
             "scrapeVariants": True,
-            "scrapeImages": True,
-            "includeProductJson": True  # 🎯 This ensures we get the full product.options array
+            "downloadFiles": False,
+            "downloadCss": False,
+            "downloadMedia": False,
+            "saveMarkdown": True,
+            "saveHtml": True,
+            "saveScreenshots": False,
+            "excludeUrlGlobs": [
+                "**/cart",
+                "**/checkout",
+                "**/customer",
+                "**/account",
+                "**/privacy",
+                "**/terms",
+                "**/media",
+                "**/static",
+                "**/search",
+                "**/blog"
+            ]
         }
 
         try:
@@ -63,7 +79,6 @@ class ApifyService:
             run_id = data.get('data', {}).get('id')
 
             logger.info(f"✅ Apify scraper started successfully: {run_id}")
-            logger.info(f"🔧 Using hoppr~shopify-scraper for full product schema extraction")
             logger.info(f"🇬🇧 Using UK residential proxy for GBP pricing and UK-specific content")
             return run_id
 
@@ -275,3 +290,42 @@ class ApifyService:
             logger.warning(f"Could not check dataset info: {str(e)}")
 
         return self.get_scraped_data(run_id, limit)
+
+    def enrich_product_with_shopify_json(self, product_url):
+        """
+        Fetch full product data from Shopify's native JSON API
+        Every Shopify product page has a .json endpoint with complete data including option names
+
+        Args:
+            product_url: Product URL (e.g., https://store.com/products/example)
+
+        Returns:
+            dict: Full Shopify product data with options, or None if failed
+        """
+        if not product_url or '/products/' not in product_url:
+            return None
+
+        # Convert product URL to JSON endpoint
+        json_url = product_url.rstrip('/') + '.json'
+
+        try:
+            logger.info(f"🔍 Fetching Shopify JSON for: {json_url}")
+            response = requests.get(json_url, timeout=15)
+
+            if response.status_code == 200:
+                data = response.json()
+                product_data = data.get('product', {})
+
+                if product_data and 'options' in product_data:
+                    option_count = len(product_data.get('options', []))
+                    logger.info(f"✅ Shopify JSON enrichment successful - found {option_count} option(s)")
+                    return product_data
+                else:
+                    logger.warning(f"⚠️  Shopify JSON response missing options data")
+            else:
+                logger.warning(f"⚠️  Shopify JSON fetch failed: HTTP {response.status_code}")
+
+        except Exception as e:
+            logger.error(f"❌ Error fetching Shopify JSON: {str(e)}")
+
+        return None

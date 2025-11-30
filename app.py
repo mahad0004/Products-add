@@ -2083,6 +2083,38 @@ def run_workflow(task_id, url, max_products):
         logger.info(f"[{task_id}] Transforming prices")
         products = product_mapper.adjust_prices(products)
 
+        # 🎯 ENRICH WITH SHOPIFY JSON API - Get option names from Shopify's native JSON
+        logger.info(f"[{task_id}] 🔍 Enriching products with Shopify JSON API for option names...")
+        enriched_count = 0
+
+        for product in products:
+            # Get product URL from various possible locations in scraped data
+            product_url = (
+                product.get('url') or
+                product.get('link') or
+                product.get('productUrl') or
+                product.get('_original', {}).get('url') or
+                product.get('_original', {}).get('link')
+            )
+
+            if product_url:
+                # Fetch full product data from Shopify JSON API
+                shopify_json = apify_service.enrich_product_with_shopify_json(product_url)
+
+                if shopify_json and 'options' in shopify_json:
+                    # Merge Shopify JSON options into product data
+                    product['options'] = shopify_json['options']
+                    enriched_count += 1
+                    logger.info(f"[{task_id}] ✅ Enriched '{product.get('title', 'Unknown')[:50]}' with {len(shopify_json['options'])} option(s)")
+
+                    # Log option names
+                    for opt in shopify_json['options']:
+                        opt_name = opt.get('name', 'Unknown')
+                        opt_values_count = len(opt.get('values', []))
+                        logger.info(f"[{task_id}]    → Option: '{opt_name}' ({opt_values_count} values)")
+
+        logger.info(f"[{task_id}] 📊 Enrichment complete: {enriched_count}/{len(products)} products enriched with option names")
+
         # Process and save each product to database (NO AI enhancement)
         logger.info(f"[{task_id}] Saving products to database")
 
