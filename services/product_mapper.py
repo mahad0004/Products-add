@@ -162,7 +162,8 @@ class ProductMapper:
             if candidate is not None:
                 try:
                     price = float(candidate)
-                    if price > 0:
+                    # Return the price even if it's 0 - let the variant filtering handle zero prices
+                    if price >= 0:
                         return price
                 except (ValueError, TypeError):
                     continue
