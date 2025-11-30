@@ -66,6 +66,24 @@ class DatabaseService:
             if isinstance(tags_data, list):
                 tags_data = ', '.join(tags_data)
 
+            # Extract option names from product options
+            option1_name = None
+            option2_name = None
+            option3_name = None
+
+            options_data = product_data.get('options', [])
+            if isinstance(options_data, list):
+                for idx, opt in enumerate(options_data):
+                    if isinstance(opt, dict):
+                        opt_name = opt.get('name', '')
+                        if opt_name and opt_name != 'Title':
+                            if idx == 0:
+                                option1_name = opt_name
+                            elif idx == 1:
+                                option2_name = opt_name
+                            elif idx == 2:
+                                option3_name = opt_name
+
             product = Product(
                 job_id=job_id,
                 title=product_data.get('title', 'Untitled'),
@@ -74,6 +92,9 @@ class DatabaseService:
                 product_type=product_data.get('product_type', ''),
                 tags=tags_data,
                 vendor=product_data.get('vendor', ''),
+                option1_name=option1_name,
+                option2_name=option2_name,
+                option3_name=option3_name,
                 seo_title=product_data.get('seo_title', ''),
                 seo_description=product_data.get('seo_description', ''),
                 status='pending',

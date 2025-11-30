@@ -59,6 +59,11 @@ class Product(db.Model):
     tags = db.Column(db.Text)
     vendor = db.Column(db.String(200))
 
+    # Variant option names (for proper Shopify variant selectors)
+    option1_name = db.Column(db.String(200))
+    option2_name = db.Column(db.String(200))
+    option3_name = db.Column(db.String(200))
+
     # SEO fields
     seo_title = db.Column(db.String(500))
     seo_description = db.Column(db.Text)
@@ -172,35 +177,20 @@ class Product(db.Model):
             if variant.get('option3') and variant['option3'] not in ['Default', 'Default Title']:
                 option3_values.add(variant['option3'])
 
-        # Extract option names from original scraped data
-        option_names = ['Option 1', 'Option 2', 'Option 3']  # Fallback
-
-        try:
-            if self.original_data:
-                original = json.loads(self.original_data)
-                if original.get('options') and isinstance(original['options'], list):
-                    # Extract option names from scraped data
-                    scraped_option_names = []
-                    for opt in original['options']:
-                        if isinstance(opt, dict) and opt.get('name'):
-                            scraped_option_names.append(opt['name'])
-                        elif isinstance(opt, str):
-                            scraped_option_names.append(opt)
-
-                    if scraped_option_names:
-                        option_names = scraped_option_names
-                        logger.info(f"✅ Extracted option names from scraped data: {option_names}")
-        except Exception as e:
-            logger.warning(f"⚠️ Could not extract option names from original_data: {e}")
-            # Will use default option_names
-
+        # Use stored option names (extracted during product save)
         # Build options array (only for real variant options)
         if option1_values:
-            options.append({'name': option_names[0] if len(option_names) > 0 else 'Option 1'})
+            option_name = self.option1_name if self.option1_name else 'Option 1'
+            options.append({'name': option_name})
+            logger.info(f"✅ Option 1: {option_name}")
         if option2_values:
-            options.append({'name': option_names[1] if len(option_names) > 1 else 'Option 2'})
+            option_name = self.option2_name if self.option2_name else 'Option 2'
+            options.append({'name': option_name})
+            logger.info(f"✅ Option 2: {option_name}")
         if option3_values:
-            options.append({'name': option_names[2] if len(option_names) > 2 else 'Option 3'})
+            option_name = self.option3_name if self.option3_name else 'Option 3'
+            options.append({'name': option_name})
+            logger.info(f"✅ Option 3: {option_name}")
 
         # If no options, use default Title option
         if not options:
@@ -373,6 +363,11 @@ class AIProduct(db.Model):
     tags = db.Column(db.Text)
     vendor = db.Column(db.String(200))
 
+    # Variant option names (copied from source product)
+    option1_name = db.Column(db.String(200))
+    option2_name = db.Column(db.String(200))
+    option3_name = db.Column(db.String(200))
+
     # SEO fields
     seo_title = db.Column(db.String(500))
     seo_description = db.Column(db.Text)
@@ -489,35 +484,20 @@ class AIProduct(db.Model):
             if variant.get('option3') and variant['option3'] not in ['Default', 'Default Title']:
                 option3_values.add(variant['option3'])
 
-        # Extract option names from source product's original scraped data
-        option_names = ['Option 1', 'Option 2', 'Option 3']  # Fallback
-
-        try:
-            if self.source_product and self.source_product.original_data:
-                original = json.loads(self.source_product.original_data)
-                if original.get('options') and isinstance(original['options'], list):
-                    # Extract option names from scraped data
-                    scraped_option_names = []
-                    for opt in original['options']:
-                        if isinstance(opt, dict) and opt.get('name'):
-                            scraped_option_names.append(opt['name'])
-                        elif isinstance(opt, str):
-                            scraped_option_names.append(opt)
-
-                    if scraped_option_names:
-                        option_names = scraped_option_names
-                        logger.info(f"✅ Extracted option names from source product: {option_names}")
-        except Exception as e:
-            logger.warning(f"⚠️ Could not extract option names from source product: {e}")
-            # Will use default option_names
-
+        # Use stored option names (copied from source product during AI job)
         # Build options array (only for real variant options)
         if option1_values:
-            options.append({'name': option_names[0] if len(option_names) > 0 else 'Option 1'})
+            option_name = self.option1_name if self.option1_name else 'Option 1'
+            options.append({'name': option_name})
+            logger.info(f"✅ AI Product Option 1: {option_name}")
         if option2_values:
-            options.append({'name': option_names[1] if len(option_names) > 1 else 'Option 2'})
+            option_name = self.option2_name if self.option2_name else 'Option 2'
+            options.append({'name': option_name})
+            logger.info(f"✅ AI Product Option 2: {option_name}")
         if option3_values:
-            options.append({'name': option_names[2] if len(option_names) > 2 else 'Option 3'})
+            option_name = self.option3_name if self.option3_name else 'Option 3'
+            options.append({'name': option_name})
+            logger.info(f"✅ AI Product Option 3: {option_name}")
 
         # If no options, use default Title option
         if not options:
