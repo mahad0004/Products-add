@@ -117,8 +117,8 @@ product_mapper = ProductMapper()
 image_processor = ImageProcessor()
 db_service = DatabaseService()
 
-# Thread pool for async operations
-executor = ThreadPoolExecutor(max_workers=3)
+# Thread pool for async operations (increased to support 5-6 parallel stores)
+executor = ThreadPoolExecutor(max_workers=8)
 
 # Parallel processing executor (configurable workers for Pro Mode)
 # Default: 2 workers for Pro Mode parallel processing (conservative to avoid rate limits)
@@ -136,9 +136,19 @@ GEMINI_DELAY = float(os.getenv('GEMINI_DELAY', 1.0))  # 1 second delay after eac
 openai_rate_limiter = threading.Semaphore(2)
 OPENAI_DELAY = float(os.getenv('OPENAI_DELAY', 0.5))  # 0.5 second delay after each OpenAI call
 
-# Shopify Rate Limiter: Max 1 concurrent call (Shopify has strict 2 req/sec limit)
-shopify_rate_limiter = threading.Semaphore(1)
+# Shopify Rate Limiter: PER-STORE rate limiting (each store has independent 2 req/sec limit)
+# Dictionary to store rate limiters per Shopify store URL
+shopify_rate_limiters = {}
+shopify_rate_limiter_lock = threading.Lock()
 SHOPIFY_DELAY = float(os.getenv('SHOPIFY_DELAY', 0.6))  # 0.6 second delay after each Shopify call (under 2/sec)
+
+def get_shopify_rate_limiter(shop_url):
+    """Get or create a rate limiter for a specific Shopify store"""
+    with shopify_rate_limiter_lock:
+        if shop_url not in shopify_rate_limiters:
+            # Each store gets its own semaphore (max 1 concurrent call per store)
+            shopify_rate_limiters[shop_url] = threading.Semaphore(1)
+        return shopify_rate_limiters[shop_url]
 
 # Global progress tracking for pushing to Shopify
 push_progress = {
@@ -1989,6 +1999,7 @@ def push_ai_product_to_shopify(ai_product_id):
 
         # Use custom Shopify credentials if provided, otherwise use default
         active_shopify_service = shopify_service  # Default
+        current_shop_url = shopify_service.shop_url  # Track URL for per-store rate limiting
 
         if ai_job and ai_job.custom_shopify_url:
             logger.info(f"🔧 Using CUSTOM Shopify store: {ai_job.custom_shopify_url}")
@@ -1996,6 +2007,7 @@ def push_ai_product_to_shopify(ai_product_id):
                 shop_url=ai_job.custom_shopify_url,
                 access_token=ai_job.custom_access_token
             )
+            current_shop_url = active_shopify_service.shop_url
         else:
             logger.info(f"🔧 Using DEFAULT Shopify store from .env")
 
@@ -2014,7 +2026,7 @@ def push_ai_product_to_shopify(ai_product_id):
         logger.info(f"AI Product title: {shopify_data['title']}")
 
         # DUPLICATE CHECK: Check if product with this title already exists in Shopify (rate-limited)
-        with shopify_rate_limiter:
+        with get_shopify_rate_limiter(current_shop_url):
             logger.info(f"🛍️ Shopify: Checking for duplicates...")
             existing_products = active_shopify_service.find_products_by_title(shopify_data['title'])
             time.sleep(SHOPIFY_DELAY)  # Delay after Shopify call
@@ -2030,7 +2042,7 @@ def push_ai_product_to_shopify(ai_product_id):
             return True
 
         # Create product in Shopify (rate-limited)
-        with shopify_rate_limiter:
+        with get_shopify_rate_limiter(current_shop_url):
             logger.info(f"🛍️ Shopify: Creating product...")
             created_product = active_shopify_service.create_product(shopify_data)
             time.sleep(SHOPIFY_DELAY)  # Delay after Shopify call
@@ -2059,7 +2071,7 @@ def push_ai_product_to_shopify(ai_product_id):
 
         logger.info(f"Attaching {len(ai_images)} images to Shopify product")
         for ai_image in ai_images:
-            with shopify_rate_limiter:
+            with get_shopify_rate_limiter(current_shop_url):
                 logger.info(f"🛍️ Shopify: Uploading image...")
                 success = active_shopify_service.add_product_image(shopify_product_id, ai_image.image_url)
                 time.sleep(SHOPIFY_DELAY)  # Delay after Shopify call
@@ -2070,7 +2082,7 @@ def push_ai_product_to_shopify(ai_product_id):
         for variant in created_product.get('variants', []):
             inventory_item_id = variant.get('inventory_item_id')
             if inventory_item_id:
-                with shopify_rate_limiter:
+                with get_shopify_rate_limiter(current_shop_url):
                     logger.info(f"🛍️ Shopify: Disabling inventory tracking...")
                     active_shopify_service.disable_inventory_tracking(inventory_item_id)
                     time.sleep(SHOPIFY_DELAY)  # Delay after Shopify call
@@ -2372,7 +2384,7 @@ def fix_shopify_products_async(product_limit):
                 batch_size = min(remaining, 250)
                 logger.info(f"Fetching batch of {batch_size} products (since_id={since_id})")
 
-                with shopify_rate_limiter:
+                with get_shopify_rate_limiter(shopify_service.shop_url):
                     products_batch = shopify_service.get_products(limit=batch_size, since_id=since_id)
                     time.sleep(SHOPIFY_DELAY)
 
@@ -2457,7 +2469,7 @@ def fix_shopify_products_async(product_limit):
                         logger.info(f"[{idx}/{len(all_products)}] Description cleaned ({len(current_body_html)} -> {len(cleaned_body_html)} chars)")
 
                     # Update product in Shopify (rate-limited)
-                    with shopify_rate_limiter:
+                    with get_shopify_rate_limiter(shopify_service.shop_url):
                         logger.info(f"[{idx}/{len(all_products)}] Shopify: Updating product...")
                         updated = shopify_service.update_product(product_id, update_data)
                         time.sleep(SHOPIFY_DELAY)
