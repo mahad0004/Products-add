@@ -42,8 +42,12 @@ class ProductMapper:
 
     def adjust_prices(self, products):
         """
-        Adjust product prices: divide by 100, then multiply by 2
-        Replicates Code in JavaScript8 logic
+        Adjust product prices: Multiply by 2
+
+        IMPORTANT: Source prices from Apify already include VAT and all taxes.
+        We simply multiply the final price (with VAT) by 2.
+
+        Example: Original £55 (inc VAT) → Our price £110 (inc VAT)
         """
         for product in products:
             try:
@@ -53,23 +57,23 @@ class ProductMapper:
                         if 'price' in variant:
                             if isinstance(variant['price'], dict) and 'current' in variant['price']:
                                 original = variant['price']['current']
-                                truncated = int(original / 100)
-                                variant['price']['current'] = truncated * 2
+                                # Source price includes VAT/taxes, multiply by 2 for final price
+                                variant['price']['current'] = float(original) * 2
                             elif isinstance(variant['price'], (int, float)):
                                 original = variant['price']
-                                truncated = int(original / 100)
-                                variant['price'] = truncated * 2
+                                # Source price includes VAT/taxes, multiply by 2 for final price
+                                variant['price'] = float(original) * 2
 
                 # Handle product-level price
                 if 'price' in product:
                     if isinstance(product['price'], dict) and 'current' in product['price']:
                         original = product['price']['current']
-                        truncated = int(original / 100)
-                        product['price']['current'] = truncated * 2
+                        # Source price includes VAT/taxes, multiply by 2 for final price
+                        product['price']['current'] = float(original) * 2
                     elif isinstance(product['price'], (int, float)):
                         original = product['price']
-                        truncated = int(original / 100)
-                        product['price'] = truncated * 2
+                        # Source price includes VAT/taxes, multiply by 2 for final price
+                        product['price'] = float(original) * 2
 
             except Exception as e:
                 logger.error(f"Error adjusting prices: {str(e)}")
