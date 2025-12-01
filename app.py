@@ -121,20 +121,20 @@ db_service = DatabaseService()
 executor = ThreadPoolExecutor(max_workers=8)
 
 # Parallel processing executor (configurable workers for Pro Mode)
-# Default: 2 workers for Pro Mode parallel processing (conservative to avoid rate limits)
-PARALLEL_WORKERS = int(os.getenv('PARALLEL_WORKERS', 2))
+# Increased to 4 workers with 10 Gemini keys for faster parallel processing
+PARALLEL_WORKERS = int(os.getenv('PARALLEL_WORKERS', 4))
 
 # ==================== GLOBAL RATE LIMITERS ====================
 # These ensure we never hit API rate limits for Gemini, OpenAI, or Shopify
 # Semaphores limit concurrent API calls across all parallel workers
 
-# Gemini Rate Limiter: Max 2 concurrent calls (conservative)
-gemini_rate_limiter = threading.Semaphore(2)
-GEMINI_DELAY = float(os.getenv('GEMINI_DELAY', 1.0))  # 1 second delay after each Gemini call
+# Gemini Rate Limiter: With 10 API keys, allow 10 concurrent calls for maximum speed
+gemini_rate_limiter = threading.Semaphore(10)
+GEMINI_DELAY = float(os.getenv('GEMINI_DELAY', 0.3))  # Reduced delay for faster processing with 10 keys
 
-# OpenAI Rate Limiter: Max 2 concurrent calls
-openai_rate_limiter = threading.Semaphore(2)
-OPENAI_DELAY = float(os.getenv('OPENAI_DELAY', 0.5))  # 0.5 second delay after each OpenAI call
+# OpenAI Rate Limiter: Increased for parallel processing across multiple stores
+openai_rate_limiter = threading.Semaphore(6)
+OPENAI_DELAY = float(os.getenv('OPENAI_DELAY', 0.3))  # Reduced delay for faster processing
 
 # Shopify Rate Limiter: PER-STORE rate limiting (each store has independent 2 req/sec limit)
 # Dictionary to store rate limiters per Shopify store URL
