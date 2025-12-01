@@ -59,35 +59,33 @@ class GeminiService:
         else:
             self.api_keys = api_keys if api_keys else []
 
-        # Create a client for each API key
-        self.clients = []
+        # LAZY LOADING: Store clients dict (initialized on first use to avoid worker timeout)
+        self.clients = {}  # key_index -> client
         self.key_names = []  # For logging which key is being used
+        self._clients_initialized = False
+        self._init_lock = threading.Lock()  # Thread-safe lazy init
 
-        for idx, key in enumerate(self.api_keys, 1):
-            try:
-                client = genai.Client(api_key=key)
-                self.clients.append(client)
-                self.key_names.append(f"Key {idx}")
-                logger.info(f"✅ Initialized Gemini Client #{idx} with Nano Banana (gemini-2.5-flash-image)")
-            except Exception as e:
-                logger.error(f"❌ Failed to initialize Gemini Client #{idx}: {str(e)}")
+        # Pre-populate key names
+        for idx in range(len(self.api_keys)):
+            self.key_names.append(f"Key {idx + 1}")
 
-        if not self.clients:
+        if not self.api_keys:
             logger.warning("⚠️ No valid Gemini API keys provided")
         else:
-            logger.info(f"🔄 Multi-key rotation enabled: {len(self.clients)} API keys loaded")
+            logger.info(f"🔄 Multi-key rotation enabled: {len(self.api_keys)} API keys configured (lazy loading)")
+            logger.info(f"   📊 Clients will be initialized on first use to avoid worker timeout")
             logger.info(f"   ")
             logger.info(f"   ⚙️  DYNAMIC QUOTA MANAGEMENT:")
             logger.info(f"   1️⃣  Use Key 1 → Run until API returns quota error")
-            if len(self.clients) > 1:
-                for i in range(2, len(self.clients) + 1):
+            if len(self.api_keys) > 1:
+                for i in range(2, len(self.api_keys) + 1):
                     logger.info(f"   {i}️⃣  Switch to Key {i} → Run until API returns quota error")
             logger.info(f"   ⏸️  When ALL keys exhausted → Auto-pause processing")
             logger.info(f"   💤 Wait until midnight Pacific Time (quota resets)")
             logger.info(f"   ▶️  Auto-resume processing with fresh quota")
             logger.info(f"   ")
             logger.info(f"   📊 Quota Detection: Dynamic (waits for 429/RESOURCE_EXHAUSTED errors)")
-            logger.info(f"   📊 Total API keys: {len(self.clients)} keys")
+            logger.info(f"   📊 Total API keys: {len(self.api_keys)} keys")
             logger.info(f"   📊 Mode: Pro Mode (2 images per product)")
 
         # Round-robin rotation index (thread-safe)
@@ -123,26 +121,52 @@ class GeminiService:
 
         return time_until_reset, next_midnight
 
+    def _ensure_client_initialized(self, key_index):
+        """
+        Lazy initialization: Create client for a specific key index if not already created
+        Thread-safe initialization
+        """
+        if key_index in self.clients:
+            return  # Already initialized
+
+        with self._init_lock:
+            # Double-check after acquiring lock
+            if key_index in self.clients:
+                return
+
+            # Initialize this specific client
+            try:
+                key = self.api_keys[key_index]
+                client = genai.Client(api_key=key)
+                self.clients[key_index] = client
+                logger.info(f"✅ Lazy-initialized Gemini Client #{key_index + 1}")
+            except Exception as e:
+                logger.error(f"❌ Failed to initialize Gemini Client #{key_index + 1}: {str(e)}")
+                raise
+
     def _get_next_client(self):
         """
         Get the next client in round-robin rotation (thread-safe)
         Skips keys that have exhausted their quota
         Returns: (client, key_name) tuple or (None, None) if all keys exhausted
         """
-        if not self.clients:
+        if not self.api_keys:
             return None, None
 
         with self._rotation_lock:
             # Try to find a non-exhausted key
             attempts = 0
-            max_attempts = len(self.clients)
+            max_attempts = len(self.api_keys)  # Use api_keys length, not clients
 
             while attempts < max_attempts:
+                # Lazy-initialize client if needed
+                self._ensure_client_initialized(self._current_key_index)
+
                 client = self.clients[self._current_key_index]
                 key_name = self.key_names[self._current_key_index]
 
                 # Move to next key for next request
-                self._current_key_index = (self._current_key_index + 1) % len(self.clients)
+                self._current_key_index = (self._current_key_index + 1) % len(self.api_keys)
 
                 # Check if this key is exhausted
                 if not self.quota_exhausted.get(key_name, False):
@@ -156,7 +180,7 @@ class GeminiService:
                 attempts += 1
 
             # All keys are exhausted
-            logger.error(f"❌ ALL {len(self.clients)} API keys have exhausted their quota")
+            logger.error(f"❌ ALL {len(self.api_keys)} API keys have exhausted their quota")
             return None, None
 
     def get_usage_stats(self):
