@@ -42,16 +42,14 @@ class ProductMapper:
 
     def adjust_prices(self, products):
         """
-        Adjust product prices: Convert PKR to GBP, then multiply by 2
+        Adjust product prices: Divide by 100, then multiply by 2
 
-        IMPORTANT: Source prices from Pakistani stores are in PKR (Pakistani Rupees).
-        1. Convert PKR to GBP using exchange rate (~350 PKR = 1 GBP)
+        IMPORTANT: Apify scraper returns UK prices in PENCE (not pounds).
+        1. Divide by 100 to convert pence to pounds (1598 pence = £15.98)
         2. Multiply by 2 for markup
 
-        Example: 19798 PKR → £56.57 GBP → £113.14 GBP (final price with 2x markup)
+        Example: 1598 pence → £15.98 → £31.96 (final price with 2x markup)
         """
-        PKR_TO_GBP_RATE = 350  # 1 GBP = ~350 PKR (as of Dec 2025)
-
         for product in products:
             try:
                 # Handle variants
@@ -59,28 +57,28 @@ class ProductMapper:
                     for variant in product['variants']:
                         if 'price' in variant:
                             if isinstance(variant['price'], dict) and 'current' in variant['price']:
-                                original_pkr = variant['price']['current']
-                                # Convert PKR to GBP, then multiply by 2 for markup
-                                price_gbp = float(original_pkr) / PKR_TO_GBP_RATE
-                                variant['price']['current'] = price_gbp * 2
+                                price_in_pence = variant['price']['current']
+                                # Convert pence to pounds, then multiply by 2 for markup
+                                price_in_pounds = float(price_in_pence) / 100
+                                variant['price']['current'] = price_in_pounds * 2
                             elif isinstance(variant['price'], (int, float)):
-                                original_pkr = variant['price']
-                                # Convert PKR to GBP, then multiply by 2 for markup
-                                price_gbp = float(original_pkr) / PKR_TO_GBP_RATE
-                                variant['price'] = price_gbp * 2
+                                price_in_pence = variant['price']
+                                # Convert pence to pounds, then multiply by 2 for markup
+                                price_in_pounds = float(price_in_pence) / 100
+                                variant['price'] = price_in_pounds * 2
 
                 # Handle product-level price
                 if 'price' in product:
                     if isinstance(product['price'], dict) and 'current' in product['price']:
-                        original_pkr = product['price']['current']
-                        # Convert PKR to GBP, then multiply by 2 for markup
-                        price_gbp = float(original_pkr) / PKR_TO_GBP_RATE
-                        product['price']['current'] = price_gbp * 2
+                        price_in_pence = product['price']['current']
+                        # Convert pence to pounds, then multiply by 2 for markup
+                        price_in_pounds = float(price_in_pence) / 100
+                        product['price']['current'] = price_in_pounds * 2
                     elif isinstance(product['price'], (int, float)):
-                        original_pkr = product['price']
-                        # Convert PKR to GBP, then multiply by 2 for markup
-                        price_gbp = float(original_pkr) / PKR_TO_GBP_RATE
-                        product['price'] = price_gbp * 2
+                        price_in_pence = product['price']
+                        # Convert pence to pounds, then multiply by 2 for markup
+                        price_in_pounds = float(price_in_pence) / 100
+                        product['price'] = price_in_pounds * 2
 
             except Exception as e:
                 logger.error(f"Error adjusting prices: {str(e)}")
