@@ -75,7 +75,17 @@ USERNAME = 'Mahad'
 PASSWORD = 'Mahad'
 
 # Database configuration
-app.config['SQLALCHEMY_DATABASE_URI'] = os.getenv('DATABASE_URL', 'sqlite:///shopify_automation.db?timeout=30')
+# For Railway: Use volume-mounted path (/data) to persist database across deployments
+# For local: Falls back to local path
+DATABASE_PATH = os.getenv('DATABASE_PATH', '/data/shopify_automation.db')
+if not os.path.exists(os.path.dirname(DATABASE_PATH)) and os.path.dirname(DATABASE_PATH) != '':
+    # If /data doesn't exist (local dev), use current directory
+    DATABASE_PATH = 'shopify_automation.db'
+    logger.info(f"📁 Using local database path: {DATABASE_PATH}")
+else:
+    logger.info(f"📁 Using Railway volume database path: {DATABASE_PATH}")
+
+app.config['SQLALCHEMY_DATABASE_URI'] = os.getenv('DATABASE_URL', f'sqlite:///{DATABASE_PATH}?timeout=30')
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 app.config['SQLALCHEMY_ECHO'] = False
 app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024
