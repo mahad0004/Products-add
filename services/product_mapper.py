@@ -42,13 +42,16 @@ class ProductMapper:
 
     def adjust_prices(self, products):
         """
-        Adjust product prices: Multiply by 2
+        Adjust product prices: Convert PKR to GBP, then multiply by 2
 
-        IMPORTANT: Source prices from Apify already include VAT and all taxes.
-        We simply multiply the final price (with VAT) by 2.
+        IMPORTANT: Source prices from Pakistani stores are in PKR (Pakistani Rupees).
+        1. Convert PKR to GBP using exchange rate (~350 PKR = 1 GBP)
+        2. Multiply by 2 for markup
 
-        Example: Original £55 (inc VAT) → Our price £110 (inc VAT)
+        Example: 19798 PKR → £56.57 GBP → £113.14 GBP (final price with 2x markup)
         """
+        PKR_TO_GBP_RATE = 350  # 1 GBP = ~350 PKR (as of Dec 2025)
+
         for product in products:
             try:
                 # Handle variants
@@ -56,24 +59,28 @@ class ProductMapper:
                     for variant in product['variants']:
                         if 'price' in variant:
                             if isinstance(variant['price'], dict) and 'current' in variant['price']:
-                                original = variant['price']['current']
-                                # Source price includes VAT/taxes, multiply by 2 for final price
-                                variant['price']['current'] = float(original) * 2
+                                original_pkr = variant['price']['current']
+                                # Convert PKR to GBP, then multiply by 2 for markup
+                                price_gbp = float(original_pkr) / PKR_TO_GBP_RATE
+                                variant['price']['current'] = price_gbp * 2
                             elif isinstance(variant['price'], (int, float)):
-                                original = variant['price']
-                                # Source price includes VAT/taxes, multiply by 2 for final price
-                                variant['price'] = float(original) * 2
+                                original_pkr = variant['price']
+                                # Convert PKR to GBP, then multiply by 2 for markup
+                                price_gbp = float(original_pkr) / PKR_TO_GBP_RATE
+                                variant['price'] = price_gbp * 2
 
                 # Handle product-level price
                 if 'price' in product:
                     if isinstance(product['price'], dict) and 'current' in product['price']:
-                        original = product['price']['current']
-                        # Source price includes VAT/taxes, multiply by 2 for final price
-                        product['price']['current'] = float(original) * 2
+                        original_pkr = product['price']['current']
+                        # Convert PKR to GBP, then multiply by 2 for markup
+                        price_gbp = float(original_pkr) / PKR_TO_GBP_RATE
+                        product['price']['current'] = price_gbp * 2
                     elif isinstance(product['price'], (int, float)):
-                        original = product['price']
-                        # Source price includes VAT/taxes, multiply by 2 for final price
-                        product['price'] = float(original) * 2
+                        original_pkr = product['price']
+                        # Convert PKR to GBP, then multiply by 2 for markup
+                        price_gbp = float(original_pkr) / PKR_TO_GBP_RATE
+                        product['price'] = price_gbp * 2
 
             except Exception as e:
                 logger.error(f"Error adjusting prices: {str(e)}")
