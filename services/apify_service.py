@@ -32,6 +32,7 @@ class ApifyService:
         }
 
         # Configure scraper with UK proxy for accurate pricing and availability
+        # OPTIMIZED FOR LARGE SCRAPES (80k+ products)
         payload = {
             "startUrls": [{"url": shopify_url}],
             "proxy": {
@@ -42,15 +43,15 @@ class ApifyService:
             "crawlerType": "playwright:chrome",
             "sameDomain": True,
             "useSitemaps": True,
-            "maxPages": 30000,
+            "maxPages": 100000,  # Increased from 30k to 100k for massive sites
             "maxDepth": 7,
             "maxResultRecords": max_results,
-            "requestDelayMs": 1000,
-            "maxConcurrency": 1,
+            "requestDelayMs": 500,  # Reduced from 1000ms to 500ms (2x faster, still polite)
+            "maxConcurrency": 5,  # Increased from 1 to 5 (5x faster for large scrapes)
             "requestTimeoutSecs": 120,
             "scrapeProducts": True,
             "scrapeCollections": True,
-            "scrapeVariants": True,
+            "scrapeVariants": True,  # ✅ CRITICAL: Ensures all variants are extracted
             "downloadFiles": False,
             "downloadCss": False,
             "downloadMedia": False,
@@ -116,21 +117,26 @@ class ApifyService:
         Returns: True if succeeded, False otherwise
         """
         start_time = time.time()
+        check_count = 0
 
         while time.time() - start_time < timeout:
             status = self.check_status(run_id)
+            elapsed_minutes = (time.time() - start_time) / 60
+            remaining_minutes = (timeout - (time.time() - start_time)) / 60
+            check_count += 1
 
             if status == "SUCCEEDED":
-                logger.info(f"Apify run {run_id} succeeded")
+                logger.info(f"✅ Apify run {run_id} succeeded after {elapsed_minutes:.1f} minutes")
                 return True
             elif status in ["FAILED", "ABORTED", "TIMED-OUT"]:
-                logger.error(f"Apify run {run_id} failed with status: {status}")
+                logger.error(f"❌ Apify run {run_id} failed with status: {status} after {elapsed_minutes:.1f} minutes")
                 return False
 
-            logger.info(f"Apify run {run_id} status: {status}, waiting...")
+            # Enhanced progress logging for long-running scrapes
+            logger.info(f"⏳ Apify run {run_id} status: {status} | Elapsed: {elapsed_minutes:.1f}m | Remaining: {remaining_minutes:.1f}m | Check #{check_count}")
             time.sleep(poll_interval)
 
-        logger.error(f"Apify run {run_id} timed out after {timeout}s")
+        logger.error(f"⏰ Apify run {run_id} timed out after {timeout}s ({timeout/60:.0f} minutes)")
         return False
 
     def get_last_run(self):

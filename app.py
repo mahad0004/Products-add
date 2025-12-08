@@ -2145,8 +2145,11 @@ def run_workflow(task_id, url, max_products):
         logger.info(f"[{task_id}] ✅ Apify scraper started - Run ID: {run_id}")
         logger.info(f"[{task_id}] ⏱️  Waiting for Apify to complete scraping...")
 
-        # WAIT for Apify scrape to complete (max 10 minutes timeout)
-        success = apify_service.wait_for_completion(run_id, timeout=600, poll_interval=10)
+        # WAIT for Apify scrape to complete
+        # For large scrapes (80k products): 6 hour timeout, check every 60 seconds
+        # Timeout: 21600 seconds = 6 hours (enough for massive scrapes)
+        # Poll interval: 60 seconds (reduces API calls from 360 to 6 per hour)
+        success = apify_service.wait_for_completion(run_id, timeout=21600, poll_interval=60)
 
         if not success:
             logger.error(f"[{task_id}] Apify scrape failed or timed out")
