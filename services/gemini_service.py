@@ -869,6 +869,25 @@ Examples by product type:
 - Product should occupy 50-70% of the frame
 - Environment supports but doesn't distract from the product
 
+🔍 SPECIAL HANDLING FOR SMALL PRODUCTS (ZOOM SCOPE):
+**IF the product is SMALL in size** (hooks, screws, bolts, nuts, fasteners, small hardware, clips, pins, washers, rivets, brackets under 10cm, small accessories, etc.):
+- Apply ZOOM SCOPE: Close-up, macro photography showing the product at LARGE scale
+- Product should fill 70-85% of the frame - much closer than standard products
+- Show product at 3-5x larger than typical viewing scale to reveal fine details
+- Sharp macro focus on product details (threads, textures, edges, surface finish)
+- CRITICAL: Show ONLY the main product - NO other similar products in frame
+- SINGLE PRODUCT FOCUS: One hook, one screw, one bolt - not multiples, not collections
+- Background should be softly blurred to emphasize the single product
+- Lighting should highlight the small product's material and finish
+- Still show in real-world application but ZOOMED IN to make it vibrant and prominent
+- Think: "Product jewelry shot in real environment" - make small items look premium
+
+Examples of ZOOM SCOPE for small products:
+- Single hook on workshop wall (zoomed in, fills frame, details visible)
+- One screw being used in wooden project (macro shot, threads visible, no other screws)
+- Single bolt close-up in mechanical assembly (zoomed scope, surface texture clear)
+- One small bracket in installation (macro focus, single unit, details prominent)
+
 🔒 PRESERVE EXACT PRODUCT APPEARANCE WITH ALL DETAILS:
 - The product must be IDENTICAL to ALL reference images in EVERY way
 - Preserve EXACT colors, materials, textures from reference images

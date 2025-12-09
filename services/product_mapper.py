@@ -117,13 +117,13 @@ class ProductMapper:
         if not product_type:
             product_type = 'Products'
 
-        # Tags
+        # Tags - ONLY use source website tag, ignore all other tags
+        # We only want the website we scraped from as a tag, no extra tags
         tags = ''
-        if product.get('tags'):
-            if isinstance(product['tags'], list):
-                tags = ', '.join(str(t) for t in product['tags'] if t)
-            elif isinstance(product['tags'], str):
-                tags = product['tags']
+        source_tag = product.get('source_tag')  # This should be the website tag from scraping
+        if source_tag:
+            tags = str(source_tag)
+        # Ignore any other tags from the original product data
 
         # Build variants
         variants = self._build_variants(product)
