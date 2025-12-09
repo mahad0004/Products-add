@@ -941,91 +941,126 @@ Examples of final results:
 - Storage Rack → Rack WITH items as focal point in facility setting
 """,
             "installation": """
-📸 IMAGE 2: REAL-LIFE APPLICATION (PRODUCT IN ACTUAL USE)
+📸 IMAGE 2: PRODUCT APPLICATION IN REAL-WORLD USE CASE
 
 🎯 OBJECTIVE:
-Show the product being used in a REAL-LIFE APPLICATION - how it actually functions in the real world.
-This is NOT an installation scene - this shows the product DOING ITS JOB.
+Show the product in its REAL-WORLD APPLICATION - demonstrating exactly HOW and WHY it's used in everyday scenarios.
+This is about showing the product SOLVING A PROBLEM or SERVING ITS PURPOSE in its natural environment.
 
-🎯 WHAT TO SHOW:
-Analyze the product title and reference images to understand its PURPOSE, then show it fulfilling that purpose:
+🎯 WHAT TO SHOW - REAL-WORLD USE CASE SCENARIOS:
+Analyze the product title and ALL reference images to understand its REAL-WORLD PURPOSE, then show it in action:
 
-Examples by product type:
-- IBC Spill Pallet → Show in chemical storage area/warehouse with IBC container on top, realistic workplace setting
-- Parking Bollard → Show installed in parking lot protecting area, cars nearby, real parking environment
-- Wheel Stop → Show in parking space with vehicle wheel against it
-- Safety Barrier → Show protecting hazard area in active workplace
-- Floor Tape/Markers → Show applied on floor with workplace activity (people walking, forklifts, etc.)
-- Storage Rack → Show in warehouse with items stored, realistic facility
-- Speed Bump → Show installed on road/driveway with vehicles
-- Sign/Post → Show in its intended location serving its warning/direction purpose
+📋 APPLICATION EXAMPLES BY PRODUCT CATEGORY:
 
-🎯 KEY PRINCIPLE: FUNCTION OVER INSTALLATION
-- Show the product WORKING, not being installed
-- Show the product SERVING ITS PURPOSE in its natural environment
-- The viewer should understand WHY this product exists and what it does
+For STORAGE & CONTAINMENT Products:
+- IBC Spill Pallet → Active chemical storage area with IBC containers being stored, showing spill containment in use
+- Storage Rack → Warehouse with workers accessing stored items, showing organizational benefits
+- Tool Cabinet → Workshop with tools being retrieved/used, showing workflow efficiency
+- Container → Products being stored or transported, showing practical capacity
 
-🔒 PRESERVE EXACT PRODUCT APPEARANCE:
-- The product being installed must be IDENTICAL to the original reference images
-- Do NOT change the product's color, shape, size, design, or any physical features
-- ONLY change the environment/scenario around the product (add workers, tools, workplace)
-- The product is perfect as-is - DO NOT redesign or modify it
-- Show the EXACT SAME product being installed in a realistic workplace setting
+For SAFETY & PROTECTION Products:
+- Parking Bollard → Protecting building entrance with vehicles parking nearby, preventing vehicle access to restricted areas
+- Safety Barrier → Creating safe zones in active workplace, protecting workers from hazards
+- Wheel Stop → Preventing vehicle overrun in parking area, showing parking space management
+- Speed Bump → Controlling vehicle speed on driveway/road, showing traffic calming in action
+- Safety Sign → Warning/directing people in facility, showing communication in workplace
 
-📸 CRITICAL: SHOW COMPLETE PRODUCT AS SEEN IN REFERENCE IMAGES:
-- Study ALL reference images to understand the COMPLETE product
-- If product is designed to HOLD items (pallets, racks, stands):
-  * Show the COMPLETE setup - the base product WITH what it's meant to hold
-  * IBC pallet → Show WITH IBC container on top
-  * Storage rack → Show WITH items stored on shelves
-  * Tool holder → Show WITH tools in place
-- Show the product LOADED and FUNCTIONAL as it would be in real use
-- DO NOT show just an empty base/frame if it's meant to hold something
+For MARKING & IDENTIFICATION Products:
+- Floor Tape/Markers → Defining walkways/zones in busy warehouse with forklifts and workers following paths
+- Safety Tape → Cordoning off hazard area, showing area control
+- Labels/Signs → Identifying equipment or areas, showing organizational system in use
 
-👥 PEOPLE IN THE SCENE (OPTIONAL - USE ONLY IF IT ADDS CONTEXT):
-- People are OPTIONAL, not required - only include if it helps show the application
-- If people are shown, they should be:
-  * In the background or periphery, not the focus
-  * Using/interacting with the area where product is (walking on marked floor, parking near bollard, etc.)
-  * Dressed appropriately for the setting (work clothes, safety gear if needed)
-  * Natural and authentic, not posed
-- For most products, NO people needed - just show the product working in its environment
+For EQUIPMENT & TOOLS Products:
+- Workbench → Worker performing tasks, showing workspace functionality
+- Ladder/Step → Person accessing high shelves or areas, showing access solution
+- Trolley/Cart → Moving materials across facility, showing material handling
+- Lighting → Illuminating work area, showing visibility improvement
 
-🌍 REAL-LIFE ENVIRONMENT:
-Choose the authentic environment where this product would actually be used:
-- Pallets/IBCs → Chemical storage area, warehouse, outdoor containment area
-- Parking equipment (bollards, wheel stops, speed bumps) → Parking lots, driveways, roads
-- Storage/racks → Warehouses, facilities, organized storage areas
-- Safety equipment (barriers, tape, signs) → Active workplaces, construction sites, facilities
-- Floor markings → Warehouse floors with forklifts/activity, parking areas
+🎯 KEY PRINCIPLES - DEMONSTRATE VALUE:
+- Show the product ACTIVELY SOLVING A PROBLEM or providing benefit
+- Demonstrate the product's VALUE PROPOSITION - why someone needs it
+- Capture the REAL-WORLD CONTEXT that makes the product necessary
+- The viewer should instantly understand "This is why I need this product"
+- Show BEFORE/AFTER benefits implicitly (organized vs chaos, safe vs dangerous, etc.)
 
-Show realistic context:
-- Other relevant equipment in background (forklifts, vehicles, machinery, shelving)
-- Proper workplace setting (concrete floors, industrial lighting, outdoor paving)
-- Active environment that shows the product is needed and functional
-- NOT studio setting - real workplace or outdoor location
+🔒 PRESERVE EXACT PRODUCT APPEARANCE WITH ALL DETAILS:
+- The product must be IDENTICAL to ALL reference images in EVERY way
+- Preserve EXACT colors, materials, textures, dimensions, and all visible features
+- Keep ALL design elements, hardware, fasteners, surface finishes exactly as shown
+- Do NOT simplify, modify, or omit any product features
+- ONLY change the environment/scenario around the product
+- Show the EXACT SAME product in its real-world application
+
+📸 CRITICAL: SHOW COMPLETE PRODUCT AS INTENDED:
+- Study ALL reference images to see the product's INTENDED COMPLETE STATE
+- If product is designed to HOLD/STORE items → Show WITH items being stored:
+  * IBC pallet → Show WITH IBC containers actively stored on it
+  * Storage rack → Show WITH items on shelves, person accessing them
+  * Tool cabinet → Show WITH tools organized inside, drawer open
+  * Workbench → Show WITH tools and work in progress
+- If product PROTECTS → Show WHAT it's protecting:
+  * Bollard → Show protecting building/area from vehicle access
+  * Barrier → Show creating safe zone around hazard
+  * Spill pallet → Show containing potential chemical spills
+- If product ORGANIZES → Show the ORGANIZATION in action:
+  * Floor tape → Show organized traffic flow with workers/vehicles
+  * Labels → Show labeled equipment/areas being used correctly
+
+👥 PEOPLE IN THE SCENE - SHOWING USE CASE:
+- People are ENCOURAGED to show realistic application context
+- Show people BENEFITING from the product:
+  * Workers safely navigating marked pathways
+  * Person accessing organized storage
+  * Vehicle respecting bollard protection
+  * Staff following safety signage
+  * Worker using properly organized workspace
+- People should be:
+  * Demonstrating the product's benefit/purpose
+  * Dressed appropriately for the setting (work attire, safety gear if needed)
+  * Natural and authentic - real work activities, not posed
+  * Secondary to product but showing WHY the product matters
+
+🌍 AUTHENTIC APPLICATION ENVIRONMENT:
+Choose the REAL environment where this product SOLVES PROBLEMS:
+
+Storage/Containment → Warehouses, chemical storage, workshops, outdoor yards
+Safety/Protection → Active workplaces, parking areas, construction sites, facility entrances
+Marking/Organization → Busy warehouse floors, parking lots, facilities with traffic
+Equipment/Tools → Workshops, maintenance areas, facilities, job sites
+
+Show ACTIVE, REALISTIC context:
+- Real workplace activity (forklifts moving, workers walking, vehicles parking)
+- Proper environmental elements (concrete floors, industrial lighting, outdoor settings)
+- Context that shows WHY this product is needed (busy area, hazards, organization needs)
+- NOT empty or sterile - show the BUSTLE and PURPOSE of the space
+- NOT studio setting - authentic workplace or outdoor location
 
 📸 COMPOSITION & STYLE:
-- Professional industrial/commercial photography
-- Documentary-style showing real-world application
-- Wide or medium shot that shows product AND its working environment
-- Natural lighting appropriate to the setting (warehouse lights, outdoor daylight)
-- Focus on the product serving its purpose
-- Authentic, not overly staged or perfect
+- Professional documentary-style commercial photography
+- Capture the "day in the life" application moment
+- Wide or medium shot showing product IN CONTEXT of its environment
+- Natural lighting appropriate to the setting (warehouse lights, outdoor daylight, facility lighting)
+- Focus on demonstrating product's REAL-WORLD VALUE
+- Authentic and practical - not overly staged or artificial
+- Should feel like editorial photography showing "how it's really used"
 
 🚫 BRANDING:
-- NO brand names or logos on product
-- NO company signage in environment
-- NO text except generic safety markings if appropriate for setting
+- NO brand names or logos on the product itself
+- NO company signage or branded materials in environment
+- Generic safety markings are acceptable if contextually appropriate (CAUTION, WARNING, etc.)
 
 🎯 FINAL RESULT:
-A professional photograph showing the product in REAL-LIFE APPLICATION - actively serving its purpose in its natural environment. The viewer should clearly understand what this product does and why it's useful. Show the COMPLETE product (loaded/functional) in an authentic workplace or outdoor setting that demonstrates its real-world use case.
+A professional, authentic photograph showing the product in its REAL-WORLD APPLICATION - actively demonstrating its use case and value. The viewer should immediately understand WHAT this product does, WHY it's useful, and WHERE/HOW they would use it. Show the COMPLETE product in its intended functional state within an authentic environment that tells the story of its purpose.
 
-Examples of final results:
-- IBC Spill Pallet → In warehouse with IBC container on top, chemical storage setting
-- Parking Bollard → Installed in parking lot, protecting area, cars visible
-- Floor Tape → Applied on warehouse floor, active workplace environment
-- Storage Rack → In facility with items stored, realistic warehouse setting
+Think: "This is exactly how and why customers use this product every day"
+
+Examples of strong application photos:
+- IBC Spill Pallet → Warehouse chemical storage area with IBC containers stored on pallet, worker checking inventory, showing containment system in active use
+- Parking Bollard → Protecting storefront entrance with cars parked nearby, pedestrians walking safely, showing access control in action
+- Floor Tape → Warehouse with marked pathways, forklift following route, workers in designated zones, showing organized traffic flow
+- Storage Rack → Facility with items on shelves, worker retrieving parts, showing efficient inventory management
+- Safety Barrier → Construction area with barrier protecting workers from hazard, showing safety zone creation
+- Wheel Stop → Parking lot with vehicle against wheel stop, preventing overrun, showing parking space management
 """,
             "application": """
 📸 IMAGE 2: PRODUCT APPLICATION (HANDS APPLYING/USING THE PRODUCT)
