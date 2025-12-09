@@ -78,22 +78,28 @@ class OpenAIService:
    - meta_description: same as seo_description
 
 ========== CONTENT RULES ==========
-9. PRESERVE ALL factual numbers, dimensions, and measurements:
-   - Dimensions (length, width, height, diameter, thickness)
-   - Weight, capacity, volume
-   - Size charts and dimension tables
-   - Technical specifications
-   - Material specifications (gauge, grade, etc.)
+9. PRESERVE ALL DETAILS FROM ORIGINAL DESCRIPTION - CRITICAL:
+   - You MUST extract and preserve EVERY detail from the input_description
+   - This includes: dimensions, measurements, specifications, features, materials, colors, sizes, variants
+   - Weight, capacity, volume, load ratings, certifications
+   - Size charts, dimension tables, specification tables
+   - Material specifications (gauge, grade, thickness, composition)
+   - Color options, finish types, design details
+   - Compatibility information, usage instructions, safety notes
+   - Warranty information, compliance standards, certifications
+   - ALL technical details must be included in the output
+   - Do NOT summarize or abbreviate - include EVERYTHING
 10. CONDITIONAL DIMENSIONS SECTION:
    - ONLY create dimension tables if the input_description contains actual measurements
    - Check for patterns: mm, cm, m, inches, kg, lbs, L x W x H, dimensions, specifications
    - If dimensions exist → Format as professional HTML table
    - If NO dimensions found → Skip table completely, use regular text or omit section
-11. Do NOT invent new specs - only use what's provided
+11. Do NOT invent new specs - only use what's provided in input_description
 12. Use US English
-13. Ensure body_html is 300-1000 words (longer if needed for specs/dimensions)
-14. Focus ONLY on product features, materials, benefits, and specifications
-15. Return ONLY valid JSON - no extra text or commentary"""
+13. Ensure body_html is comprehensive (300-1500 words, longer if needed for ALL specs/dimensions/details)
+14. Focus ONLY on product features, materials, benefits, and specifications from original description
+15. INCLUDE ALL DETAILS - even if the description is long, ALL information must be preserved
+16. Return ONLY valid JSON - no extra text or commentary"""
 
         user_prompt = f"""Raw product input:
 {{
@@ -109,22 +115,28 @@ class OpenAIService:
    - Emails: any patterns like info at company dot com
    - Websites: URLs like www dot example dot com or https patterns
 
-2. CRITICAL - CHECK FOR AND PRESERVE PRODUCT INFORMATION:
-   - FIRST: Check if input_description contains dimensions/measurements (mm, cm, m, kg, lbs, inches, L x W x H, etc.)
-   - IF dimensions exist:
-     * KEEP ALL dimensions, measurements, sizes (e.g., "1800mm x 600mm", "L x W x H", etc.)
-     * KEEP ALL size charts, dimension tables, specification tables
-     * FORMAT dimensions as professional HTML tables (see examples in system prompt)
-     * FORMAT size charts as clean, styled HTML tables with headers
-     * KEEP ALL technical specifications (weight, capacity, material thickness, etc.)
+2. CRITICAL - EXTRACT AND PRESERVE ALL PRODUCT INFORMATION:
+   - EXTRACT EVERY SINGLE DETAIL from input_description - this is MANDATORY
+   - YOU MUST INCLUDE ALL OF THE FOLLOWING IN body_html:
+     * ALL dimensions, measurements, sizes (e.g., "1800mm x 600mm", "L x W x H", etc.)
+     * ALL size charts, dimension tables, specification tables
+     * ALL color options, material types, finish options
+     * ALL variant information (sizes, colors, configurations)
+     * ALL technical specifications (weight, capacity, load rating, material thickness, gauge, etc.)
+     * ALL features and benefits mentioned
+     * ALL usage instructions and applications
+     * ALL safety information and warnings
+     * ALL compatibility information
+     * ALL certifications, standards, compliance information
+     * ALL warranty details if mentioned
+   - FORMAT ALL DATA PROFESSIONALLY:
+     * IF dimensions exist: FORMAT as professional HTML tables with inline CSS styling
+     * IF size charts exist: FORMAT as clean HTML tables with headers
+     * IF color/material options exist: LIST them clearly in bullet points or tables
      * Tables MUST include inline CSS styling for professional appearance
-   - IF NO dimensions exist in input:
-     * Skip dimension tables completely
-     * Use regular paragraphs and bullet points for features
-   - KEEP ALL compatibility information (regardless of dimensions)
-   - These are CRITICAL for customers - do NOT remove or abbreviate them
-   - Physical addresses: street names, postcodes, city names with addresses
-   - Social media: handles and links to social platforms
+   - IF input_description has lots of details, your body_html must be COMPREHENSIVE (even 1000-1500 words)
+   - DO NOT ABBREVIATE - include EVERYTHING from the original
+   - These details are CRITICAL for customers - NOTHING should be omitted
 
 2. SECOND - Replace removed brand names with GENERIC terms:
    - Use: Premium, Professional, Heavy Duty, High-Performance, Industrial Grade, Commercial
@@ -207,7 +219,7 @@ NO explanations, NO comments, ONLY JSON."""
                     {"role": "user", "content": user_prompt}
                 ],
                 temperature=0.7,
-                max_tokens=2500  # Increased for longer body_html content
+                max_tokens=4000  # Increased for comprehensive body_html with all details
             )
 
             content = response.choices[0].message.content.strip()

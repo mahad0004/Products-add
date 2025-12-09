@@ -45,10 +45,14 @@ class ProductMapper:
         Adjust product prices: Divide by 100, then multiply by 2
 
         IMPORTANT: Apify scraper returns UK prices in PENCE (not pounds).
-        1. Divide by 100 to convert pence to pounds (1598 pence = £15.98)
-        2. Multiply by 2 for markup
+        PRIORITY: Use VAT-inclusive price (higher price when two prices exist)
 
-        Example: 1598 pence → £15.98 → £31.96 (final price with 2x markup)
+        Process:
+        1. Extract price - prioritize VAT-inclusive price (if two prices, use HIGHER)
+        2. Divide by 100 to convert pence to pounds (1598 pence = £15.98)
+        3. Multiply by 2 for markup
+
+        Example: 1598 pence (incl VAT) → £15.98 → £31.96 (final price with 2x markup)
         """
         for product in products:
             try:
@@ -155,27 +159,104 @@ class ProductMapper:
         return shopify_product
 
     def _extract_price(self, variant, parent_product):
-        """Extract price from variant with fallbacks"""
-        candidates = [
-            variant.get('price', {}).get('current') if isinstance(variant.get('price'), dict) else None,
-            variant.get('price_current'),
-            variant.get('current'),
-            variant.get('price'),
-            parent_product.get('price', {}).get('current') if isinstance(parent_product.get('price'), dict) else None,
-            parent_product.get('price_current'),
-            parent_product.get('price'),
-            parent_product.get('current')
-        ]
+        """
+        Extract price from variant with fallbacks
 
-        for candidate in candidates:
-            if candidate is not None:
-                try:
-                    price = float(candidate)
-                    # Return the price even if it's 0 - let the variant filtering handle zero prices
-                    if price >= 0:
-                        return price
-                except (ValueError, TypeError):
-                    continue
+        PRIORITY: Use include VAT price (higher price) when available
+        If two prices exist, always use the HIGHER price (which is typically the VAT-inclusive price)
+        """
+        # Collect all possible price candidates with their sources
+        price_candidates = []
+
+        # Check variant prices
+        if isinstance(variant.get('price'), dict):
+            # If price is a dict, check for 'current', 'incl_vat', 'with_vat', etc.
+            price_dict = variant.get('price')
+            if price_dict.get('incl_vat') is not None:
+                price_candidates.append(float(price_dict['incl_vat']))
+            if price_dict.get('with_vat') is not None:
+                price_candidates.append(float(price_dict['with_vat']))
+            if price_dict.get('current') is not None:
+                price_candidates.append(float(price_dict['current']))
+
+        # Check other variant price fields
+        if variant.get('price_incl_vat') is not None:
+            try:
+                price_candidates.append(float(variant['price_incl_vat']))
+            except (ValueError, TypeError):
+                pass
+
+        if variant.get('price_with_vat') is not None:
+            try:
+                price_candidates.append(float(variant['price_with_vat']))
+            except (ValueError, TypeError):
+                pass
+
+        if variant.get('price_current') is not None:
+            try:
+                price_candidates.append(float(variant['price_current']))
+            except (ValueError, TypeError):
+                pass
+
+        if variant.get('current') is not None:
+            try:
+                price_candidates.append(float(variant['current']))
+            except (ValueError, TypeError):
+                pass
+
+        if variant.get('price') is not None and not isinstance(variant.get('price'), dict):
+            try:
+                price_candidates.append(float(variant['price']))
+            except (ValueError, TypeError):
+                pass
+
+        # Check parent product prices
+        if isinstance(parent_product.get('price'), dict):
+            price_dict = parent_product.get('price')
+            if price_dict.get('incl_vat') is not None:
+                price_candidates.append(float(price_dict['incl_vat']))
+            if price_dict.get('with_vat') is not None:
+                price_candidates.append(float(price_dict['with_vat']))
+            if price_dict.get('current') is not None:
+                price_candidates.append(float(price_dict['current']))
+
+        if parent_product.get('price_incl_vat') is not None:
+            try:
+                price_candidates.append(float(parent_product['price_incl_vat']))
+            except (ValueError, TypeError):
+                pass
+
+        if parent_product.get('price_with_vat') is not None:
+            try:
+                price_candidates.append(float(parent_product['price_with_vat']))
+            except (ValueError, TypeError):
+                pass
+
+        if parent_product.get('price_current') is not None:
+            try:
+                price_candidates.append(float(parent_product['price_current']))
+            except (ValueError, TypeError):
+                pass
+
+        if parent_product.get('price') is not None and not isinstance(parent_product.get('price'), dict):
+            try:
+                price_candidates.append(float(parent_product['price']))
+            except (ValueError, TypeError):
+                pass
+
+        if parent_product.get('current') is not None:
+            try:
+                price_candidates.append(float(parent_product['current']))
+            except (ValueError, TypeError):
+                pass
+
+        # Filter valid prices (>= 0)
+        valid_prices = [p for p in price_candidates if p >= 0]
+
+        if valid_prices:
+            # Use the HIGHER price (which is typically the VAT-inclusive price)
+            highest_price = max(valid_prices)
+            return highest_price
 
         return self.DEFAULT_PRICE
 

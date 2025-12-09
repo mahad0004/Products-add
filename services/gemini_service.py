@@ -830,64 +830,115 @@ Return ONLY the ultra-detailed image generation prompt, no additional text."""
         """
         instructions = {
             "product_in_use": """
-📸 IMAGE 1: PRODUCT IN USE (CLEAN, PROFESSIONAL, NO WORKERS)
+📸 IMAGE 1: REAL-LIFE APPLICATION WITH PRODUCT FOCUS (PRIMARY IMAGE)
 
 🎯 OBJECTIVE:
-Create a clean, professional product image showing the product in its intended use ALREADY INSTALLED and functioning as designed.
+Show the product in REAL-LIFE APPLICATION - how it actually functions in the real world, with STRONG FOCUS on the product itself.
+This is the PRIMARY image that customers see first, so the product must be the MAIN FOCUS.
 
-⚠️ CRITICAL: NO WORKERS, NO HANDS, NO TOOLS visible in this image.
+🎯 WHAT TO SHOW:
+Analyze the product title and ALL reference images to understand the product's PURPOSE, appearance, and ALL DETAILS, then show it fulfilling that purpose:
 
-🔒 PRESERVE EXACT PRODUCT APPEARANCE:
-- The product itself must remain IDENTICAL to the original reference images
-- Do NOT change the product's color, shape, size, design, or any physical features
-- ONLY change the environment/background/context around the product
-- The product is perfect as-is - DO NOT redesign or modify it
+📋 EXTRACT ALL PRODUCT DETAILS FROM DESCRIPTION:
+- Carefully analyze ALL reference images to capture EVERY product detail
+- Material composition (metal, plastic, rubber, wood, fabric, etc.)
+- Color variations and finishes (matte, glossy, textured, brushed, etc.)
+- Physical dimensions and proportions
+- All visible features (buttons, handles, holes, grooves, edges, patterns)
+- Surface textures and treatments
+- Design elements and structural details
+- Hardware and fasteners
+- Any functional components or mechanisms
+- ALL technical specifications visible in reference images
+- All these details MUST be preserved in the generated image
+
+Examples by product type:
+- IBC Spill Pallet → Show in chemical storage area/warehouse with IBC container on top, realistic workplace setting, product centered
+- Parking Bollard → Show installed in parking lot protecting area, cars nearby, bollard as main focus
+- Wheel Stop → Show in parking space with vehicle wheel against it, wheel stop prominent
+- Safety Barrier → Show protecting hazard area in active workplace, barrier as primary subject
+- Floor Tape/Markers → Show applied on floor with workplace activity, tape/markers clearly visible
+- Storage Rack → Show in warehouse with items stored, rack as main element
+- Speed Bump → Show installed on road/driveway with vehicles, speed bump prominent
+- Sign/Post → Show in its intended location serving its warning/direction purpose, sign clearly visible
+
+🎯 KEY PRINCIPLE: PRODUCT-FOCUSED REAL-WORLD APPLICATION
+- Product is the STAR of the image - main subject, clearly visible, well-lit
+- Show the product WORKING, SERVING ITS PURPOSE in its natural environment
+- The viewer should immediately see the product AND understand what it does
+- Product should occupy 50-70% of the frame
+- Environment supports but doesn't distract from the product
+
+🔒 PRESERVE EXACT PRODUCT APPEARANCE WITH ALL DETAILS:
+- The product must be IDENTICAL to ALL reference images in EVERY way
+- Preserve EXACT colors, materials, textures from reference images
+- Keep EXACT dimensions, proportions, and scale
+- Include ALL visible features: buttons, labels, mounting holes, edges, corners, patterns
+- Maintain ALL surface finishes and treatments shown in references
+- Keep ALL structural elements and design details
+- Do NOT simplify, modify, or omit any product features
+- Every detail visible in reference images MUST appear in generated image
+- The product is perfect as-is - DO NOT redesign or modify it in any way
+- Show the EXACT SAME product in a real-world setting
 
 📸 CRITICAL: SHOW COMPLETE PRODUCT AS SEEN IN REFERENCE IMAGES:
-- Study ALL reference images to see how the product is MEANT to be shown
-- If reference images show containers ON pallets → show containers ON pallet
-- If reference images show items IN/ON racks → show items stored properly
-- If reference images show equipment WITH accessories → show complete setup
-- DO NOT show just the base/frame if reference images show complete assembly
-- The reference images are your guide - replicate the COMPLETE setup you see
+- Study ALL reference images to understand the COMPLETE product
+- If product is designed to HOLD items (pallets, racks, stands):
+  * Show the COMPLETE setup - the base product WITH what it's meant to hold
+  * IBC pallet → Show WITH IBC container on top
+  * Storage rack → Show WITH items stored on shelves
+  * Tool holder → Show WITH tools in place
+- Show the product LOADED and FUNCTIONAL as it would be in real use
+- DO NOT show just an empty base/frame if it's meant to hold something
 
-🔧 PRODUCT PRESENTATION:
-- Show the product ALREADY INSTALLED and in use
-- Product functioning as designed in its final, installed state
-- COMPLETE SETUP as shown in reference images (not just base/empty structure)
-- Clean, professional presentation
-- Product should look like it's being used, but WITHOUT people visibly interacting with it
-- The SAME EXACT COMPLETE product from the reference images, just in a real-world setting
+👥 PEOPLE IN THE SCENE (OPTIONAL - MINIMAL):
+- People are OPTIONAL - only include if it helps show scale or application
+- If people are shown:
+  * Keep them in background or periphery
+  * Product remains the main focus
+  * People should be small, not distracting
+  * Natural and authentic, not posed
+- For most products, NO people needed - just show product in environment
 
-🌍 ENVIRONMENT & CONTEXT:
-- Realistic environment relevant to the product
-- Use realistic lighting and correct scale
-- Clean, well-maintained environment
-- Include ONLY objects necessary to show the product's purpose
-  Example: A wheel stop with a car wheel touching it (no person visible)
-  Example: Safety barrier installed on a road edge (no workers)
-  Example: Bollard installed in parking lot with cars nearby (no people)
+🌍 REAL-LIFE ENVIRONMENT (SUPPORTING ROLE):
+Choose the authentic environment where this product would actually be used:
+- Pallets/IBCs → Chemical storage area, warehouse, outdoor containment area
+- Parking equipment → Parking lots, driveways, roads
+- Storage/racks → Warehouses, facilities
+- Safety equipment → Active workplaces, construction sites
+- Floor markings → Warehouse floors, parking areas
 
-📸 COMPOSITION:
-- Professional, catalog-quality photography
-- Straight-on or slight angle to show product clearly
-- Natural, appropriate lighting for the environment
-- Sharp focus on product
-- Clean, uncluttered background
+Show realistic context but keep product as MAIN SUBJECT:
+- Environment is secondary - product is primary
+- Other equipment in background (blurred or subtle)
+- Proper setting but product stands out
+- NOT studio setting - real workplace or outdoor location
+- Lighting highlights the product
 
-🚫 WHAT NOT TO SHOW:
-- NO workers or people
-- NO hands touching the product
-- NO tools or installation equipment
-- NO installation process
+📸 COMPOSITION & STYLE:
+- Product-focused professional photography
+- Product is CENTER of attention, well-lit, clearly visible
+- Wide enough shot to show application but tight enough to emphasize product
+- Natural lighting appropriate to setting BUT focused on product
+- Sharp focus on product, background can be slightly softer
+- Product occupies 50-70% of frame
+- Professional but authentic, not overly staged
 
 🚫 BRANDING:
-- NO brand names, logos, or text on the product
-- NO company signage or branded materials
-- Clean surfaces only
+- NO brand names or logos on product
+- NO company signage in environment
+- NO text except generic safety markings if appropriate
 
 🎯 FINAL RESULT:
-A professional, clean image showing the product already installed and serving its purpose, photographed as if for a high-quality product catalog.
+A professional photograph showing the product in REAL-LIFE APPLICATION as the MAIN FOCUS - the product is clearly visible, well-lit, and prominent, while the environment shows its purpose. All product details from reference images are preserved. This is a PRODUCT-FOCUSED image that happens to show real-world context.
+
+Think: "Product catalog photo taken in real environment" NOT "Environment photo that includes a product"
+
+Examples of final results:
+- IBC Spill Pallet → Pallet WITH container prominently displayed in warehouse, all details visible
+- Parking Bollard → Bollard as main subject in parking lot context, design details clear
+- Floor Tape → Tape clearly visible and prominent on warehouse floor
+- Storage Rack → Rack WITH items as focal point in facility setting
 """,
             "installation": """
 📸 IMAGE 2: REAL-LIFE APPLICATION (PRODUCT IN ACTUAL USE)
