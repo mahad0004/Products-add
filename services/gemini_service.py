@@ -833,51 +833,64 @@ Return ONLY the ultra-detailed image generation prompt, no additional text."""
 📸 IMAGE 1 — REAL-LIFE APPLICATION WITH PRODUCT AS MAIN FOCUS (PRIMARY IMAGE)
 
 🎯 OBJECTIVE:
-Create a REAL-LIFE APPLICATION image showing the product EXACTLY as seen in all reference images, with the product as the MAIN focus (50–70% of the frame).
+Create a REAL-LIFE APPLICATION image showing the product EXACTLY as it appears in ALL reference images, with the product dominating 50–70% of the frame.
+✅ Image must be 1000 × 1000 px (1:1 aspect ratio).
+
+⚠️ CRITICAL - NO INSTALLATION SCENES:
+❌ DO NOT show installation, setup, or assembly processes
+❌ DO NOT show hands installing or tools installing
+❌ DO NOT show workers setting up the product
+✅ ONLY show the product in real use - already installed, already functioning, actively being used
 
 🎯 WHAT TO SHOW (MANDATORY):
 1. Analyze the product title and ALL reference images to understand the product's purpose, material, design, proportions, and functional details.
-2. Show the product performing its real-world purpose in the correct environment (warehouse, parking lot, workshop, construction site, etc.).
-3. The product must appear EXACTLY as shown in references — no design changes.
+2. Show the product actively performing its real-world purpose in an authentic location (warehouse, parking lot, industrial site, construction area, workshop, etc.).
+3. The product must appear 100% IDENTICAL to references — no modifications, no missing features, no simplification.
+4. Do NOT add any text, labels, captions, or markings on the image.
 
-📋 PRODUCT DETAIL REQUIREMENTS (MUST MATCH REFERENCES):
-Capture and preserve:
-- Exact materials
-- Exact colors & finishes (matte, glossy, brushed, textured, etc.)
-- Exact dimensions & proportions
-- All visible features (holes, grooves, edges, handles, brackets, bolts, fasteners)
-- Surface details & textures
-- Functional parts and mechanisms
-- ANY technical details visible
-- No simplification, no modification, no missing elements
+🎯 PRODUCT DETAIL REQUIREMENTS (MUST MATCH REFERENCES):
+Preserve EVERY detail exactly:
+- Exact materials (metal, plastic, rubber, composite, etc.)
+- Exact colors & finishes (matte, glossy, textured, brushed, powder-coated, etc.)
+- Exact dimensions & proportions relative to environment
+- All structural elements (holes, grooves, ridges, fasteners, handles, brackets, bolts, clips, hinges)
+- Surface texture and fine detailing (grain, welds, seams, edges, corners)
+- Any technical or functional components (mechanisms, moving parts, connectors)
+- ❌ NO design changes allowed
+- ❌ NO simplification or abstraction
+- ❌ NO missing elements or features
 
-🔍 SMALL PRODUCT RULE (ZOOM SCOPE):
-**IF the product is SMALL or under 10cm** (clips, screws, hooks, brackets, fasteners, connectors, small accessories):
-- Use macro close-up photography
-- Product fills 70–85% of frame
-- Only ONE product in frame (no multiples)
-- Background softly blurred
-- Sharp macro detail on texture, threads, finish
-- Still shown in real-world functional use, but dramatically zoomed in
+🔍 SMALL PRODUCT RULE (FOR PRODUCTS UNDER 10CM):
+**IF the product is SMALL** (clips, screws, brackets, connectors, fasteners, hooks, small accessories):
+✅ Use macro close-up photography
+✅ Product fills 70–85% of frame
+✅ Only ONE product in the frame (no multiples)
+✅ Soft blurred background for depth
+✅ High-detail capture of texture, edges, threads, and finish
+✅ Still shown in real use, NOT installation
+✅ Image must be 1000 × 1000 px (1:1)
 
-⭐ NEW ACCESSORY RULE (MANDATORY):
-**IF the product is an ACCESSORY or a small ADD-ON PART:**
+⭐ ACCESSORY RULE (MANDATORY):
+**IF the product is an ACCESSORY or small ADD-ON PART:**
 
-Generate TWO images together in one output:
+Generate TWO images in one output (side-by-side composition):
 
-1️⃣ MAIN IMAGE — Real Use Case
-- Show the accessory installed, attached, or functioning in its real-world application
-- Normal framing (not macro)
-- Environment appropriate for use
-- Product shown in active use
+1️⃣ MAIN IMAGE — Real Use Case (Left side, 60% of frame)
+✅ Accessory shown installed or functioning in its real-world use
+✅ Medium framing showing context
+✅ Authentic environment
+✅ Product actively in use (NOT being installed)
+✅ Natural lighting appropriate to setting
 
-2️⃣ SIDE PANEL — ZOOM SCOPE MACRO DETAIL
-- A separate side frame showing the accessory extremely close-up
-- Product fills 70–90% of frame
-- High-detail macro shot
-- Soft blurred background
-- Shows material, edges, texture, finish exactly as references
-- Only one accessory in this zoom panel
+2️⃣ SIDE PANEL — Macro Detail (Right side, 40% of frame)
+✅ Extreme zoom-in panel
+✅ Fills 70–90% of this panel
+✅ Soft blurred background
+✅ Shows texture, edges, surface finish in extreme detail
+✅ Only ONE accessory in the macro panel
+✅ Sharp focus on material quality and craftsmanship
+
+✅ Final combined image must be 1000 × 1000 px (1:1)
 
 📸 CRITICAL: SHOW COMPLETE PRODUCT AS SEEN IN REFERENCE IMAGES:
 - Study ALL reference images to understand the COMPLETE product
@@ -929,15 +942,24 @@ Examples of final results:
 - Accessory Bracket → Split image: installed on equipment (main) + macro detail (side panel)
 """,
             "installation": """
-📸 IMAGE 2 — PRODUCT IN REAL-WORLD APPLICATION (USE CASE DEMONSTRATION)
+📸 IMAGE 2 — REAL-WORLD APPLICATION (USE CASE DEMONSTRATION)
 
 🎯 OBJECTIVE:
-Show the product actively solving a real problem or performing its intended purpose in a real-world scenario.
+Show the product actively performing its intended purpose in a real-world environment.
+✅ Image size must be 1000 × 1000 px (1:1)
+✅ Use-case only — NO installation scenes, NO setup, NO assembly
+
+⚠️ CRITICAL - NO INSTALLATION ALLOWED:
+❌ DO NOT show installation, setup, or assembly
+❌ DO NOT show workers installing the product
+❌ DO NOT show hands or tools setting up the product
+❌ DO NOT show the product being put in place
+✅ ONLY show: Product already installed, already in place, actively being USED
 
 🎯 WHAT TO SHOW:
-1. Demonstrate HOW and WHY the product is used
+1. Demonstrate HOW and WHY the product is used in real scenarios
 2. Show the exact environment where it is needed
-3. Show the product in real action:
+3. Show the product in REAL ACTION (already installed, functioning):
    - Spill pallet → Under IBC tank containing spills
    - Wheel stop → Car tire resting against it
    - Bollard → Preventing vehicle access
@@ -972,17 +994,19 @@ Show the product actively solving a real problem or performing its intended purp
 - Trolley/Cart → Moving materials across facility, showing material handling
 - Lighting → Illuminating work area, showing visibility improvement
 
-🎯 VALUE DEMONSTRATION:
-The viewer should immediately understand:
-- What the product does
-- Why it is useful
-- How it improves safety, organization, or workflow
+💡 VALUE DEMONSTRATION:
+The viewer should instantly understand:
+✅ What the product does in practice
+✅ Why it is useful and valuable
+✅ How it improves workflow, safety, or organization
+✅ Where and when they would use it
 
-🔒 PRODUCT ACCURACY (MANDATORY):
-- Must match reference images exactly
-- No missing features
-- No altered design
-- Exact materials, colors, textures, and proportions
+🎯 PRODUCT ACCURACY (MANDATORY):
+✅ Must match references exactly — every detail preserved
+✅ No missing features or components
+✅ No design alterations or simplifications
+✅ Exact materials, colors, proportions, textures
+✅ Image must be 1000 × 1000 px (1:1)
 
 📸 CRITICAL: SHOW COMPLETE PRODUCT AS INTENDED:
 - Study ALL reference images to see the product's INTENDED COMPLETE STATE
@@ -1000,53 +1024,66 @@ The viewer should immediately understand:
   * Labels → Show labeled equipment/areas being used correctly
 
 🌍 ENVIRONMENT REQUIREMENTS:
-- Must be an authentic real-world environment
-- Active workplace preferred (workers, forklifts, vehicles, tools, equipment)
-- Should NOT look staged or studio-like
-- Real workplace activity (forklifts moving, workers walking, vehicles parking)
-- Proper environmental elements (concrete floors, industrial lighting, outdoor settings)
-- Context that shows WHY this product is needed (busy area, hazards, organization needs)
-- NOT empty or sterile - show the BUSTLE and PURPOSE of the space
+✅ Must be authentic real-world environment (NOT studio)
+✅ Active workplace showing real use (workers, forklifts, vehicles, tools)
+✅ Should NOT look staged, empty, or sterile
+✅ Real activity visible (forklifts moving, workers walking, vehicles present)
+✅ Proper environmental elements (concrete floors, industrial lighting, outdoor settings)
+✅ Context shows WHY this product is needed (busy area, hazards, organization)
+✅ Show the BUSTLE and PURPOSE of the space
+✅ Must NOT show installation or setup process
 
 👥 PEOPLE (ENCOURAGED):
-- Should be interacting naturally with the product
-- Show people BENEFITING from the product:
-  * Workers safely navigating marked pathways
-  * Person accessing organized storage
-  * Vehicle respecting bollard protection
-  * Staff following safety signage
-  * Worker using properly organized workspace
-- Wearing correct attire for environment (work clothes, safety gear if needed)
-- Must NOT overshadow the product
-- Secondary to product but showing WHY the product matters
-- Natural and authentic - real work activities, not posed
+✅ Should be interacting naturally with the product IN USE
+✅ Show people BENEFITING from the product:
+  * Workers safely navigating marked pathways (NOT installing tape)
+  * Person accessing organized storage (NOT setting up shelves)
+  * Vehicle respecting bollard protection (NOT workers installing bollard)
+  * Staff following safety signage (NOT hanging signs)
+  * Worker using properly organized workspace (NOT assembling furniture)
+✅ Wearing correct attire (work clothes, safety gear if appropriate)
+✅ Must NOT overshadow the product
+✅ Natural and authentic - real work activities, not posed
+❌ NO installation actions, NO setup activities, NO assembly work
 
-📸 STYLE:
-- Documentary-style commercial photography
-- Capture the "day in the life" application moment
-- Wide or medium shot showing product IN CONTEXT of its environment
-- Realistic lighting appropriate to environment (warehouse lights, outdoor daylight, facility lighting)
-- Focus on demonstrating product's REAL-WORLD VALUE
-- Authentic and practical - not overly staged or artificial
-- Should feel like editorial photography showing "how it's really used"
+🎬 STYLE:
+✅ Documentary-style photography showing "how it's really used"
+✅ Medium or wide framing showing product IN CONTEXT
+✅ Realistic environmental lighting (warehouse lights, outdoor daylight, facility lighting)
+✅ Focus on demonstrating REAL-WORLD VALUE
+✅ Authentic and practical - not staged or artificial
+✅ Image must be 1000 × 1000 px (1:1)
+❌ NO text overlays or added graphics
 
 🚫 BRANDING RULES (MANDATORY):
-- NO logos or brand names on product
-- NO company signage in environment
-- Generic safety labels allowed if needed (CAUTION, WARNING, etc.)
+❌ NO logos on the product
+❌ NO visible company branding anywhere
+❌ NO text overlays or captions
+✅ Generic safety labels only (CAUTION, WARNING, EXIT)
 
 🎯 FINAL RESULT:
-A professional, authentic photograph showing the product in its REAL-WORLD APPLICATION - actively demonstrating its use case and value. The viewer should immediately understand WHAT this product does, WHY it's useful, and WHERE/HOW they would use it. Show the COMPLETE product in its intended functional state within an authentic environment that tells the story of its purpose.
+A professional, authentic photograph showing the product in its REAL-WORLD APPLICATION - actively demonstrating its use case and value in an action-oriented scene.
 
-**Think:** "This is exactly how and why customers use this product every day"
+✅ Image must be 1000 × 1000 px (1:1 aspect ratio)
+✅ Product already installed and being USED (not being installed)
+✅ No text, no logos, no branding visible
+✅ Documentary-style showing real application
+✅ Viewer instantly understands: WHAT it does, WHY it's useful, WHERE/HOW to use it
 
-Examples of strong application photos:
-- IBC Spill Pallet → Warehouse chemical storage area with IBC containers stored on pallet, worker checking inventory, showing containment system in active use
-- Parking Bollard → Protecting storefront entrance with cars parked nearby, pedestrians walking safely, showing access control in action
-- Floor Tape → Warehouse with marked pathways, forklift following route, workers in designated zones, showing organized traffic flow
-- Storage Rack → Facility with items on shelves, worker retrieving parts, showing efficient inventory management
-- Safety Barrier → Construction area with barrier protecting workers from hazard, showing safety zone creation
-- Wheel Stop → Parking lot with vehicle against wheel stop, preventing overrun, showing parking space management
+**Think:** "This is exactly how and why customers use this product every day" (NOT "This is how to install it")
+
+✅ Examples of CORRECT application photos:
+- IBC Spill Pallet → Already installed in warehouse with IBC containers stored on it, worker checking inventory (NOT workers installing pallet)
+- Parking Bollard → Already in place protecting entrance, cars parked nearby, pedestrians walking (NOT workers bolting bollard to ground)
+- Floor Tape → Already applied on floor with forklift following route, workers in zones (NOT hands applying tape)
+- Storage Rack → Already assembled with items on shelves, worker retrieving parts (NOT workers assembling rack)
+- Safety Barrier → Already positioned creating safe zone, workers protected (NOT workers setting up barrier)
+- Wheel Stop → Already installed with vehicle tire against it (NOT workers placing wheel stop)
+
+🎯 FINAL NOTE (MANDATORY):
+✅ Use-case only (NO installation, NO setup, NO assembly)
+✅ 1000 × 1000 px (1:1 aspect ratio)
+✅ No text on images anywhere
 """,
             "application": """
 📸 IMAGE 2: PRODUCT APPLICATION (HANDS APPLYING/USING THE PRODUCT)
