@@ -104,19 +104,34 @@ class OpenAIService:
 
 NOTE: DO NOT generate "tags" or "meta_tags" - tags are added automatically from the source website.
 
-CRITICAL TITLE REQUIREMENTS:
-- Title MUST be 80-150 characters (aim for 100+)
-- Include primary keywords, key features, materials, and main specifications
-- Use descriptive adjectives: Premium, Professional, Heavy Duty, Industrial Grade, High-Performance, Durable, etc.
-- Add specific details: sizes, materials, key features, benefits
-- Examples of GOOD titles:
-  * "Premium Heavy Duty Safety Boot with Composite Toe Cap, Metal-Free Construction, and Slip-Resistant Rubber Outsole"
-  * "Professional Industrial Storage Box 48L - Clear Stackable Container with Secure Lid for Warehouse Organization"
-  * "High-Performance Anti-Slip Floor Tape 50mm x 18m - Yellow & Black Hazard Warning with Strong Adhesive"
-- Examples of BAD titles (too short):
-  * "Safety Boot" ❌
-  * "Storage Box 48L" ❌
-  * "Floor Tape" ❌
+⚠️ CRITICAL TITLE REQUIREMENTS - YOU WILL BE PENALIZED FOR SHORT TITLES:
+- Title MUST be MINIMUM 80 characters, MAXIMUM 150 characters (STRICT REQUIREMENT)
+- AIM FOR 100-120 characters for best SEO
+- Short titles under 80 characters are UNACCEPTABLE and will be REJECTED
+- Include: product type + key features + materials + specifications + benefits
+- Use descriptive adjectives: Premium, Professional, Heavy Duty, Industrial Grade, High-Performance, Durable
+- Add specific details: sizes, materials, colors, key features, benefits
+- Make it comprehensive and keyword-rich
+
+✅ Examples of CORRECT titles (80-150 chars):
+  * "Premium Heavy Duty Safety Boot with Composite Toe Cap, Metal-Free Construction, and Slip-Resistant Rubber Outsole" (117 chars) ✅
+  * "Professional Industrial Storage Box 48L - Clear Stackable Container with Secure Lid for Warehouse Organization" (113 chars) ✅
+  * "High-Performance Anti-Slip Floor Tape 50mm x 18m - Yellow & Black Hazard Warning with Strong Adhesive Backing" (112 chars) ✅
+  * "Durable Metal Parking Bollard 90mm Diameter - Fixed Security Post for Vehicle Access Control and Protection" (110 chars) ✅
+
+❌ Examples of UNACCEPTABLE titles (too short - FORBIDDEN):
+  * "Safety Boot" (11 chars) ❌ REJECTED - TOO SHORT
+  * "Storage Box 48L" (15 chars) ❌ REJECTED - TOO SHORT
+  * "Floor Tape" (10 chars) ❌ REJECTED - TOO SHORT
+  * "Metal Bollard for Parking" (25 chars) ❌ REJECTED - TOO SHORT
+
+⚠️ IF YOUR GENERATED TITLE IS UNDER 80 CHARACTERS, YOU MUST EXPAND IT BY ADDING:
+- More descriptive adjectives (Premium, Professional, Heavy Duty, Industrial, Commercial-Grade)
+- Key features (Metal-Free, Composite Toe, Slip-Resistant, Stackable, Weather-Resistant)
+- Materials (Steel, Plastic, Rubber, Aluminum, Powder-Coated)
+- Specifications (sizes, dimensions, capacity, weight, load rating)
+- Benefits (Safety, Security, Organization, Protection, Durability)
+- Applications (Warehouse, Industrial, Commercial, Workshop, Parking)
 
 ========== CONTENT RULES ==========
 9. PRESERVE ALL DETAILS FROM ORIGINAL DESCRIPTION - CRITICAL:
@@ -296,9 +311,45 @@ NO explanations, NO comments, ONLY JSON."""
             ai_data = self._parse_json_response(content)
 
             if ai_data:
+                # CRITICAL: Validate and fix title length
+                generated_title = ai_data.get('title', '')
+
+                if generated_title and len(generated_title) < 80:
+                    logger.warning(f"⚠️ OpenAI: Title too short ({len(generated_title)} chars): '{generated_title}'")
+                    logger.warning(f"   Expanding title to meet 80 character minimum...")
+
+                    # Expand the title by adding descriptive terms
+                    short_title = generated_title
+                    product_type = short_title.split()[0] if short_title else "Product"
+
+                    # Add descriptive prefix if not already present
+                    if not any(word in short_title.lower() for word in ['premium', 'professional', 'heavy duty', 'industrial', 'commercial', 'high-performance']):
+                        short_title = f"Premium {short_title}"
+
+                    # Add benefits/features suffix to reach minimum length
+                    if len(short_title) < 80:
+                        short_title += " - High-Quality Professional Grade for Industrial and Commercial Applications"
+
+                    # Ensure it doesn't exceed maximum
+                    if len(short_title) > 150:
+                        short_title = short_title[:147] + "..."
+
+                    ai_data['title'] = short_title
+                    logger.info(f"✅ OpenAI: Title expanded to {len(short_title)} chars: '{short_title[:80]}...'")
+
+                elif not generated_title:
+                    # No title generated - create one from description or original title
+                    logger.warning(f"⚠️ OpenAI: No title generated, creating from original...")
+                    fallback_title = title if title else "Professional Industrial Product"
+                    if len(fallback_title) < 80:
+                        fallback_title = f"Premium {fallback_title} - High-Quality Professional Grade for Industrial Use"
+                    ai_data['title'] = fallback_title[:150]
+                    logger.info(f"✅ OpenAI: Fallback title created: '{ai_data['title'][:80]}...'")
+
                 # Merge AI data with original product
                 enhanced = {**product, **ai_data}
-                logger.info(f"✅ OpenAI: Enhanced title: '{enhanced.get('title', 'Untitled')[:80]}...'")
+                final_title = enhanced.get('title', 'Untitled')
+                logger.info(f"✅ OpenAI: Final title ({len(final_title)} chars): '{final_title[:80]}...'")
                 logger.info(f"✅ OpenAI: Enhanced description: {len(enhanced.get('body_html', ''))} chars")
                 return enhanced
             else:
