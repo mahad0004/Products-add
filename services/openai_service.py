@@ -79,7 +79,7 @@ class OpenAIService:
 
 ========== JSON OUTPUT FORMAT ==========
 6. Output only JSON (no extra commentary).
-7. Keep JSON keys exactly as specified: title, seo_title, seo_description, body_html, meta_keywords, meta_description, meta_tags, short_title, slug.
+7. Keep JSON keys exactly as specified: title, seo_title, seo_description, body_html, meta_keywords, meta_description, short_title, slug.
 8. Produce:
    - title: attention-grabbing product title with GENERIC descriptive terms (max 150 chars). NO BRAND NAMES!
    - short_title: concise version for UI (max 60 chars). NO BRAND NAMES!
@@ -87,9 +87,10 @@ class OpenAIService:
    - seo_description: meta description (110-160 chars) with keyword and call to action. NO BRAND NAMES!
    - body_html: large HTML description (3-6 paragraphs) with headings, bullet lists, features, benefits, specs, FAQ. NO BRAND NAMES! NO CONTACT INFO!
    - meta_keywords: comma-separated list of 8-15 keyword variants. NO BRAND NAMES!
-   - meta_tags: array of 3-8 short tags. NO BRAND NAMES!
    - slug: URL-safe slug from short_title (lowercase, hyphens). NO BRAND NAMES!
    - meta_description: same as seo_description
+
+NOTE: DO NOT generate "tags" or "meta_tags" - tags are added automatically from the source website.
 
 ========== CONTENT RULES ==========
 9. PRESERVE ALL DETAILS FROM ORIGINAL DESCRIPTION - CRITICAL:
@@ -168,9 +169,10 @@ class OpenAIService:
    - seo_description: Meta description with NO brand names, NO vendor names (110-160 chars)
    - body_html: Rich HTML description (300-800 words) with NO brand names, NO vendor names, NO contact info, NO links, NO images
    - meta_keywords: Keyword list with NO brand names, NO vendor names (8-15 items)
-   - meta_tags: Short tags with NO brand names, NO vendor names (3-8 items)
    - slug: URL-safe slug with NO brand names, NO vendor names
    - meta_description: Same as seo_description
+
+   NOTE: DO NOT include "tags" or "meta_tags" in the output - they are handled separately
 
 4. IMPORTANT - In body_html structure:
    - Include headings (<h2>), paragraphs (<p>), bullet lists (<ul><li>)
@@ -223,8 +225,9 @@ class OpenAIService:
 
 ========== OUTPUT ==========
 Return ONLY valid JSON with these exact keys:
-{{ "title","short_title","seo_title","seo_description","body_html","meta_keywords","meta_description","meta_tags","slug" }}
+{{ "title","short_title","seo_title","seo_description","body_html","meta_keywords","meta_description","slug" }}
 
+DO NOT include "tags" or "meta_tags" - they are managed separately.
 NO explanations, NO comments, ONLY JSON."""
 
         try:

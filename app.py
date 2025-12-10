@@ -709,17 +709,16 @@ def create_ai_dupes():
                 if source_product.scrape_job:
                     source_url = source_product.scrape_job.source_url
 
-                # Get existing tags and add source URL if provided
-                existing_tags = enhanced_product.get('tags', source_product.tags) or ''
-                tags_list = [tag.strip() for tag in existing_tags.split(',') if tag.strip()]
+                # ONLY use source URL as the single tag (ignore AI-generated tags)
+                tags_list = []
 
-                # Add source URL as a readable tag if provided
+                # Add ONLY source URL as the single tag if provided
                 if source_url:
                     readable_tag = url_to_readable_tag(source_url)
-                    if readable_tag and readable_tag not in tags_list:
+                    if readable_tag:
                         tags_list.append(readable_tag)
 
-                combined_tags = ', '.join(tags_list)
+                combined_tags = ', '.join(tags_list) if tags_list else ''
 
                 # Create AI product with enhanced data
                 ai_product = AIProduct(
