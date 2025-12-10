@@ -63,10 +63,15 @@ class OpenAIService:
    - Physical addresses: ALL street addresses, postcodes, locations, "Contact us at..."
    - Contact phrases: "Call us", "Email us", "Reach us at", "Contact information"
 
-5. REMOVE ALL IMAGES/PICTURES REFERENCES:
-   - NO <img> tags in the description
-   - NO references to "see picture", "shown in image", "refer to photo"
-   - NO QR codes or barcode references
+5. ABSOLUTELY NO IMAGES OR PICTURES IN DESCRIPTION:
+   - ❌ NO <img> tags in the description HTML
+   - ❌ NO <picture> tags
+   - ❌ NO image URLs or image links
+   - ❌ NO base64 encoded images
+   - ❌ NO references to "see picture", "shown in image", "refer to photo", "image shows"
+   - ❌ NO QR codes or barcode references
+   - ❌ NO visual content embedded in body_html
+   - ✅ ONLY text-based HTML: headings, paragraphs, lists, tables
 
 6. SCAN THE ENTIRE DESCRIPTION and remove ANY occurrence of:
    - Phone numbers (look for patterns like: 0xxxx xxxxxx, +xx, xxx-xxx-xxxx)
@@ -74,18 +79,25 @@ class OpenAIService:
    - Websites (look for: www., http, .com, .co.uk, .net, etc.)
    - Company names in footer/header sections
    - Any form of contact invitation
+   - Any <img> tags or image references
 
-7. If you find contact info, brand names, or links - DELETE them completely - do NOT replace with placeholders
+7. If you find contact info, brand names, links, or images - DELETE them completely - do NOT replace with placeholders
+
+8. TITLE IS MANDATORY - YOU MUST GENERATE A TITLE:
+   - If input title is missing or empty, create a descriptive title from the description
+   - Title must ALWAYS be 80-150 characters (aim for 100+)
+   - Title is the MOST IMPORTANT field - never leave it empty
+   - Use product description to extract key features and create comprehensive title
 
 ========== JSON OUTPUT FORMAT ==========
-6. Output only JSON (no extra commentary).
-7. Keep JSON keys exactly as specified: title, seo_title, seo_description, body_html, meta_keywords, meta_description, short_title, slug.
-8. Produce:
-   - title: LONG, highly descriptive, SEO-optimized product title (80-150 chars, aim for 100+ chars). Include key features, materials, specifications, and benefits. Make it comprehensive and keyword-rich. NO BRAND NAMES!
-   - short_title: concise version for UI (max 60 chars). NO BRAND NAMES!
+9. Output only JSON (no extra commentary).
+10. Keep JSON keys exactly as specified: title, seo_title, seo_description, body_html, meta_keywords, meta_description, short_title, slug.
+11. Produce:
+   - title: MANDATORY! LONG, highly descriptive, SEO-optimized product title (80-150 chars, aim for 100+ chars). Include key features, materials, specifications, and benefits. Make it comprehensive and keyword-rich. NO BRAND NAMES! NEVER LEAVE EMPTY!
+   - short_title: concise version for UI (max 60 chars). NO BRAND NAMES! NEVER LEAVE EMPTY!
    - seo_title: SEO-optimized title with keyword near front (max 70 chars). NO BRAND NAMES!
    - seo_description: meta description (110-160 chars) with keyword and call to action. NO BRAND NAMES!
-   - body_html: large HTML description (3-6 paragraphs) with headings, bullet lists, features, benefits, specs, FAQ. NO BRAND NAMES! NO CONTACT INFO!
+   - body_html: large HTML description (3-6 paragraphs) with headings, bullet lists, features, benefits, specs, FAQ. NO BRAND NAMES! NO CONTACT INFO! NO IMAGES! NO <img> TAGS!
    - meta_keywords: comma-separated list of 8-15 keyword variants. NO BRAND NAMES!
    - slug: URL-safe slug from short_title (lowercase, hyphens). NO BRAND NAMES!
    - meta_description: same as seo_description
@@ -145,8 +157,13 @@ CRITICAL TITLE REQUIREMENTS:
    - Emails: any patterns like info at company dot com
    - Websites: URLs like www dot example dot com or https patterns
    - Links: ANY <a href="..."> tags or clickable text
-   - Pictures/Images: NO <img> tags or image references
+   - Pictures/Images: NO <img> tags, NO <picture> tags, NO image URLs, NO base64 images
+   - Image references: NO "see image", "shown in picture", "refer to photo"
    - Contact info: NO "call us", "email us", addresses, fax numbers
+
+CRITICAL: body_html must ONLY contain text-based HTML:
+✅ Allowed: <h2>, <h3>, <p>, <ul>, <li>, <table>, <tr>, <td>, <th>, <strong>, <em>, <br>
+❌ Forbidden: <img>, <picture>, <iframe>, <video>, <embed>, <object>, image URLs
 
 2. CRITICAL - EXTRACT AND PRESERVE ALL PRODUCT INFORMATION:
    - EXTRACT EVERY SINGLE DETAIL from input_description - this is MANDATORY
@@ -241,8 +258,11 @@ CRITICAL TITLE REQUIREMENTS:
      * Links (<a href="...">) and URLs
      * Vendor/brand names
      * Contact information of any kind
-     * Image tags (<img>) or image references
+     * Image tags (<img>, <picture>) or image references
+     * Any visual content (base64 images, image URLs)
+     * Any references to images ("see image", "shown in picture", etc.)
    - Do NOT invent specs - only use what's in the input description
+   - ONLY use text-based HTML: <h2>, <p>, <ul>, <li>, <table>, <strong>, <em>
 
 ========== OUTPUT ==========
 Return ONLY valid JSON with these exact keys:
