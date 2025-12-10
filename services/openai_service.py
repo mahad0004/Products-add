@@ -47,21 +47,35 @@ class OpenAIService:
 2. REMOVE ALL COMPANY NAMES and MANUFACTURER NAMES from ALL fields:
    - Any proper nouns that are company/brand names MUST be removed
    - Do NOT keep ANY branded product line names
+   - REMOVE vendor names completely - do NOT include in description
 
-3. REMOVE ALL CONTACT INFORMATION from title and body_html:
+3. ABSOLUTELY NO LINKS ALLOWED - REMOVE ALL URLs:
+   - NO hyperlinks (<a href="...">)
+   - NO website URLs (www., http://, https://, .com, .co.uk, .net, etc.)
+   - NO link text like "Click here", "Visit our website", "Learn more at"
+   - If description mentions a website, DELETE the entire sentence
+
+4. REMOVE ALL CONTACT INFORMATION from title and body_html:
    - Phone numbers: ALL formats (e.g., 01234 567890, +44 1234 567890, (123) 456-7890, 123-456-7890)
    - Email addresses: ALL formats (e.g., info@company.com, sales@example.co.uk)
-   - Websites: ALL URLs and domain names (e.g., www.example.com, example.co.uk, https://...)
-   - Social media: ALL handles and links (@company, facebook.com/company)
-   - Physical addresses: ALL street addresses, postcodes, locations
+   - Fax numbers: ALL formats
+   - Social media: ALL handles and links (@company, facebook.com/company, LinkedIn, Twitter, etc.)
+   - Physical addresses: ALL street addresses, postcodes, locations, "Contact us at..."
+   - Contact phrases: "Call us", "Email us", "Reach us at", "Contact information"
 
-4. SCAN THE ENTIRE DESCRIPTION and remove ANY occurrence of:
+5. REMOVE ALL IMAGES/PICTURES REFERENCES:
+   - NO <img> tags in the description
+   - NO references to "see picture", "shown in image", "refer to photo"
+   - NO QR codes or barcode references
+
+6. SCAN THE ENTIRE DESCRIPTION and remove ANY occurrence of:
    - Phone numbers (look for patterns like: 0xxxx xxxxxx, +xx, xxx-xxx-xxxx)
    - Email addresses (look for: xxx@xxx.xxx)
    - Websites (look for: www., http, .com, .co.uk, .net, etc.)
    - Company names in footer/header sections
+   - Any form of contact invitation
 
-5. If you find contact info or brand names, DELETE them completely - do NOT replace with placeholders
+7. If you find contact info, brand names, or links - DELETE them completely - do NOT replace with placeholders
 
 ========== JSON OUTPUT FORMAT ==========
 6. Output only JSON (no extra commentary).
@@ -111,9 +125,13 @@ class OpenAIService:
 ========== YOUR TASK ==========
 1. FIRST - SCAN for and REMOVE these from BOTH title AND description:
    - Brand names: Black Bull, System Tek, Euroslide, ModSec, Securus, ANY proper noun brands
+   - Vendor names: ANY company/manufacturer names
    - Phone numbers in ANY format: digits like 1234567890, patterns with dashes or spaces
    - Emails: any patterns like info at company dot com
    - Websites: URLs like www dot example dot com or https patterns
+   - Links: ANY <a href="..."> tags or clickable text
+   - Pictures/Images: NO <img> tags or image references
+   - Contact info: NO "call us", "email us", addresses, fax numbers
 
 2. CRITICAL - EXTRACT AND PRESERVE ALL PRODUCT INFORMATION:
    - EXTRACT EVERY SINGLE DETAIL from input_description - this is MANDATORY
@@ -144,14 +162,14 @@ class OpenAIService:
    - Example: System Tek Workbench becomes Professional Workbench
 
 3. THIRD - Generate SEO-optimized JSON with:
-   - title: Long, keyword-rich title with NO brand names (max 150 chars)
-   - short_title: Concise UI version with NO brand names (max 60 chars)
-   - seo_title: SEO title with NO brand names (max 70 chars)
-   - seo_description: Meta description with NO brand names (110-160 chars)
-   - body_html: Rich HTML description (300-800 words) with NO brand names, NO contact info
-   - meta_keywords: Keyword list with NO brand names (8-15 items)
-   - meta_tags: Short tags with NO brand names (3-8 items)
-   - slug: URL-safe slug with NO brand names
+   - title: Long, keyword-rich title with NO brand names, NO vendor names (max 150 chars)
+   - short_title: Concise UI version with NO brand names, NO vendor names (max 60 chars)
+   - seo_title: SEO title with NO brand names, NO vendor names (max 70 chars)
+   - seo_description: Meta description with NO brand names, NO vendor names (110-160 chars)
+   - body_html: Rich HTML description (300-800 words) with NO brand names, NO vendor names, NO contact info, NO links, NO images
+   - meta_keywords: Keyword list with NO brand names, NO vendor names (8-15 items)
+   - meta_tags: Short tags with NO brand names, NO vendor names (3-8 items)
+   - slug: URL-safe slug with NO brand names, NO vendor names
    - meta_description: Same as seo_description
 
 4. IMPORTANT - In body_html structure:
@@ -195,7 +213,12 @@ class OpenAIService:
 
    - Add <h2>Technical Specifications</h2> section (can also use table format)
    - Add 2-3 short FAQ Q&A
-   - SCAN ENTIRE HTML for phone numbers, emails, websites and REMOVE them
+   - CRITICAL: SCAN ENTIRE HTML for and REMOVE:
+     * Phone numbers, emails, websites, fax numbers
+     * Links (<a href="...">) and URLs
+     * Vendor/brand names
+     * Contact information of any kind
+     * Image tags (<img>) or image references
    - Do NOT invent specs - only use what's in the input description
 
 ========== OUTPUT ==========
