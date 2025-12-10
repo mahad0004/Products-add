@@ -81,7 +81,7 @@ class OpenAIService:
 6. Output only JSON (no extra commentary).
 7. Keep JSON keys exactly as specified: title, seo_title, seo_description, body_html, meta_keywords, meta_description, short_title, slug.
 8. Produce:
-   - title: attention-grabbing product title with GENERIC descriptive terms (max 150 chars). NO BRAND NAMES!
+   - title: LONG, highly descriptive, SEO-optimized product title (80-150 chars, aim for 100+ chars). Include key features, materials, specifications, and benefits. Make it comprehensive and keyword-rich. NO BRAND NAMES!
    - short_title: concise version for UI (max 60 chars). NO BRAND NAMES!
    - seo_title: SEO-optimized title with keyword near front (max 70 chars). NO BRAND NAMES!
    - seo_description: meta description (110-160 chars) with keyword and call to action. NO BRAND NAMES!
@@ -91,6 +91,20 @@ class OpenAIService:
    - meta_description: same as seo_description
 
 NOTE: DO NOT generate "tags" or "meta_tags" - tags are added automatically from the source website.
+
+CRITICAL TITLE REQUIREMENTS:
+- Title MUST be 80-150 characters (aim for 100+)
+- Include primary keywords, key features, materials, and main specifications
+- Use descriptive adjectives: Premium, Professional, Heavy Duty, Industrial Grade, High-Performance, Durable, etc.
+- Add specific details: sizes, materials, key features, benefits
+- Examples of GOOD titles:
+  * "Premium Heavy Duty Safety Boot with Composite Toe Cap, Metal-Free Construction, and Slip-Resistant Rubber Outsole"
+  * "Professional Industrial Storage Box 48L - Clear Stackable Container with Secure Lid for Warehouse Organization"
+  * "High-Performance Anti-Slip Floor Tape 50mm x 18m - Yellow & Black Hazard Warning with Strong Adhesive"
+- Examples of BAD titles (too short):
+  * "Safety Boot" ❌
+  * "Storage Box 48L" ❌
+  * "Floor Tape" ❌
 
 ========== CONTENT RULES ==========
 9. PRESERVE ALL DETAILS FROM ORIGINAL DESCRIPTION - CRITICAL:
@@ -163,7 +177,7 @@ NOTE: DO NOT generate "tags" or "meta_tags" - tags are added automatically from 
    - Example: System Tek Workbench becomes Professional Workbench
 
 3. THIRD - Generate SEO-optimized JSON with:
-   - title: Long, keyword-rich title with NO brand names, NO vendor names (max 150 chars)
+   - title: LONG (80-150 chars, aim for 100+), highly descriptive, keyword-rich title. Include key features, materials, specs, and benefits. Use descriptive adjectives (Premium, Professional, Heavy Duty, etc.). NO brand names, NO vendor names!
    - short_title: Concise UI version with NO brand names, NO vendor names (max 60 chars)
    - seo_title: SEO title with NO brand names, NO vendor names (max 70 chars)
    - seo_description: Meta description with NO brand names, NO vendor names (110-160 chars)
@@ -173,6 +187,13 @@ NOTE: DO NOT generate "tags" or "meta_tags" - tags are added automatically from 
    - meta_description: Same as seo_description
 
    NOTE: DO NOT include "tags" or "meta_tags" in the output - they are handled separately
+
+   TITLE MUST BE LONG AND DESCRIPTIVE:
+   - Minimum 80 characters, ideal 100-150 characters
+   - Include product type + key features + materials + specifications
+   - Use descriptive words: Premium, Professional, Heavy Duty, Industrial, Durable, High-Performance
+   - Add dimensions/sizes if available in input
+   - Make it comprehensive and SEO-friendly
 
 4. IMPORTANT - In body_html structure:
    - Include headings (<h2>), paragraphs (<p>), bullet lists (<ul><li>)
