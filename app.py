@@ -635,17 +635,35 @@ def create_ai_dupes():
                 primary_image_url = all_image_urls[0]
                 logger.info(f"📸 Found {len(all_image_urls)} image(s) for product - using all for context")
 
-                # Image 1: Product in use (clean, no workers/hands/tools)
+                # Image 1: Product in use (clean, no workers/hands/tools) - with auto-retry
                 logger.info(f"Editing Image 1 with Nano Banana: Product in use (clean, no workers)...")
-                edited_url_1 = gemini_service.edit_product_image(
-                    primary_image_url,
-                    source_product.title,
-                    variation="product_in_use",
-                    all_image_urls=all_image_urls  # Pass all images for context
-                )
+                edited_url_1 = None
+                max_retries = 3
+
+                for attempt in range(max_retries):
+                    try:
+                        edited_url_1 = gemini_service.edit_product_image(
+                            primary_image_url,
+                            source_product.title,
+                            variation="product_in_use",
+                            all_image_urls=all_image_urls  # Pass all images for context
+                        )
+
+                        if edited_url_1:
+                            break  # Success
+                        else:
+                            # Single key exhausted, retry with next key
+                            if attempt < max_retries - 1:
+                                logger.info(f"🔄 Retrying image 1/2 with next API key (attempt {attempt + 2}/{max_retries})...")
+                                time.sleep(1)
+
+                    except GeminiQuotaExhaustedError:
+                        # ALL keys exhausted - stop processing and wait
+                        logger.error(f"❌ ALL API keys exhausted at product {product_id}")
+                        raise  # Propagate to trigger wait logic
 
                 if not edited_url_1:
-                    logger.error(f"❌ Gemini edit failed for image 1/2 on product {product_id} - SKIPPING (no fallback allowed)")
+                    logger.error(f"❌ Gemini edit failed for image 1/2 on product {product_id} after retries - SKIPPING")
                     errors.append(f"Product {product_id}: Gemini image editing failed (image 1/2 - product in use)")
                     continue
 
@@ -684,17 +702,34 @@ def create_ai_dupes():
                     second_image_variation = "installation"
                     logger.info(f"🎯 Detected installation product - using workers installation scene")
 
-                # Image 2: Context-appropriate second image
+                # Image 2: Context-appropriate second image - with auto-retry
                 logger.info(f"Editing Image 2 with Nano Banana: {second_image_variation} scene...")
-                edited_url_2 = gemini_service.edit_product_image(
-                    primary_image_url,
-                    source_product.title,
-                    variation=second_image_variation,
-                    all_image_urls=all_image_urls  # Pass all images for context
-                )
+                edited_url_2 = None
+
+                for attempt in range(max_retries):
+                    try:
+                        edited_url_2 = gemini_service.edit_product_image(
+                            primary_image_url,
+                            source_product.title,
+                            variation=second_image_variation,
+                            all_image_urls=all_image_urls  # Pass all images for context
+                        )
+
+                        if edited_url_2:
+                            break  # Success
+                        else:
+                            # Single key exhausted, retry with next key
+                            if attempt < max_retries - 1:
+                                logger.info(f"🔄 Retrying image 2/2 with next API key (attempt {attempt + 2}/{max_retries})...")
+                                time.sleep(1)
+
+                    except GeminiQuotaExhaustedError:
+                        # ALL keys exhausted - stop processing and wait
+                        logger.error(f"❌ ALL API keys exhausted at product {product_id}")
+                        raise  # Propagate to trigger wait logic
 
                 if not edited_url_2:
-                    logger.error(f"❌ Gemini edit failed for image 2/2 on product {product_id} - SKIPPING (no fallback allowed)")
+                    logger.error(f"❌ Gemini edit failed for image 2/2 on product {product_id} after retries - SKIPPING")
                     errors.append(f"Product {product_id}: Gemini image editing failed (image 2/2 - {second_image_variation})")
                     continue
 
@@ -1344,51 +1379,78 @@ def process_single_product(source_product, ai_job_id, fast_mode, created_counter
                 logger.error(f"[AI Job {ai_job_id}] ❌ {error_msg}")
                 return (False, error_msg)
 
-            # Edit TWO professional product images (rate-limited)
+            # Edit TWO professional product images (rate-limited with auto-retry)
             # Image 1: Product in use (clean, no workers)
-            try:
-                with gemini_rate_limiter:
-                    logger.info(f"[AI Job {ai_job_id}] 🍌 Nano Banana: Editing image 1/2 (Product in use - clean)...")
-                    edited_url_1 = gemini_service.edit_product_image(
-                        first_image.original_url,
-                        source_product.title,
-                        variation="product_in_use"
-                    )
-                    time.sleep(GEMINI_DELAY)  # Delay after Gemini call
-            except GeminiQuotaExhaustedError as e:
-                # Quota exhausted - propagate the error up to be handled by process_ai_job_async
-                error_msg = f"Gemini quota exhausted: {str(e)}"
-                logger.error(f"[AI Job {ai_job_id}] ❌ {error_msg}")
-                raise  # Re-raise to be caught by process_ai_job_async
+            edited_url_1 = None
+            max_retries = 3  # Retry up to 3 times to allow automatic key rotation
 
-            # CRITICAL: If Gemini fails, STOP - do NOT create product
+            for attempt in range(max_retries):
+                try:
+                    with gemini_rate_limiter:
+                        logger.info(f"[AI Job {ai_job_id}] 🍌 Nano Banana: Editing image 1/2 (Product in use - clean)...")
+                        edited_url_1 = gemini_service.edit_product_image(
+                            first_image.original_url,
+                            source_product.title,
+                            variation="product_in_use"
+                        )
+                        time.sleep(GEMINI_DELAY)  # Delay after Gemini call
+
+                        # If successful (not None), break out of retry loop
+                        if edited_url_1:
+                            break
+                        else:
+                            # None means single key exhausted, others available - retry automatically
+                            if attempt < max_retries - 1:
+                                logger.info(f"[AI Job {ai_job_id}] 🔄 Retrying with next API key (attempt {attempt + 2}/{max_retries})...")
+                                time.sleep(1)  # Brief delay before retry
+
+                except GeminiQuotaExhaustedError as e:
+                    # ALL keys exhausted - propagate error to trigger wait logic
+                    error_msg = f"Gemini quota exhausted: {str(e)}"
+                    logger.error(f"[AI Job {ai_job_id}] ❌ {error_msg}")
+                    raise  # Re-raise to be caught by process_ai_job_async
+
+            # CRITICAL: If Gemini fails after all retries, STOP - do NOT create product
             if not edited_url_1:
-                error_msg = "Gemini image editing failed (image 1/2) - SKIPPING product (no fallback allowed)"
+                error_msg = "Gemini image editing failed (image 1/2) after retries - SKIPPING product"
                 logger.error(f"[AI Job {ai_job_id}] ❌ {error_msg}")
                 return (False, error_msg)
 
             ai_image_urls.append(edited_url_1)
             logger.info(f"[AI Job {ai_job_id}] ✅ Nano Banana: Image 1/2 edited successfully (Product in use)")
 
-            # Image 2: Installation scene with workers
-            try:
-                with gemini_rate_limiter:
-                    logger.info(f"[AI Job {ai_job_id}] 🍌 Nano Banana: Editing image 2/2 (Installation scene)...")
-                    edited_url_2 = gemini_service.edit_product_image(
-                        first_image.original_url,
-                        source_product.title,
-                        variation="installation"
-                    )
-                    time.sleep(GEMINI_DELAY)  # Delay after Gemini call
-            except GeminiQuotaExhaustedError as e:
-                # Quota exhausted - propagate the error up to be handled by process_ai_job_async
-                error_msg = f"Gemini quota exhausted: {str(e)}"
-                logger.error(f"[AI Job {ai_job_id}] ❌ {error_msg}")
-                raise  # Re-raise to be caught by process_ai_job_async
+            # Image 2: Installation scene with workers (with auto-retry)
+            edited_url_2 = None
 
-            # CRITICAL: If Gemini fails, STOP - do NOT create product
+            for attempt in range(max_retries):
+                try:
+                    with gemini_rate_limiter:
+                        logger.info(f"[AI Job {ai_job_id}] 🍌 Nano Banana: Editing image 2/2 (Installation scene)...")
+                        edited_url_2 = gemini_service.edit_product_image(
+                            first_image.original_url,
+                            source_product.title,
+                            variation="installation"
+                        )
+                        time.sleep(GEMINI_DELAY)  # Delay after Gemini call
+
+                        # If successful (not None), break out of retry loop
+                        if edited_url_2:
+                            break
+                        else:
+                            # None means single key exhausted, others available - retry automatically
+                            if attempt < max_retries - 1:
+                                logger.info(f"[AI Job {ai_job_id}] 🔄 Retrying with next API key (attempt {attempt + 2}/{max_retries})...")
+                                time.sleep(1)  # Brief delay before retry
+
+                except GeminiQuotaExhaustedError as e:
+                    # ALL keys exhausted - propagate error to trigger wait logic
+                    error_msg = f"Gemini quota exhausted: {str(e)}"
+                    logger.error(f"[AI Job {ai_job_id}] ❌ {error_msg}")
+                    raise  # Re-raise to be caught by process_ai_job_async
+
+            # CRITICAL: If Gemini fails after all retries, STOP - do NOT create product
             if not edited_url_2:
-                error_msg = "Gemini image editing failed (image 2/2) - SKIPPING product (no fallback allowed)"
+                error_msg = "Gemini image editing failed (image 2/2) after retries - SKIPPING product"
                 logger.error(f"[AI Job {ai_job_id}] ❌ {error_msg}")
                 return (False, error_msg)
 
