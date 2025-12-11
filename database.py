@@ -71,6 +71,17 @@ class DatabaseService:
             if isinstance(tags_data, list):
                 tags_data = ', '.join(tags_data)
 
+            # Extract collection name from categories (Apify returns 'categories' not 'product_type')
+            collection_name = product_data.get('product_type', '')  # Try product_type first (for other scrapers)
+            if not collection_name:
+                # Get from categories array if product_type not present
+                categories = product_data.get('categories', [])
+                if isinstance(categories, list) and len(categories) > 0:
+                    # Use first category as collection name
+                    collection_name = categories[0] if isinstance(categories[0], str) else ''
+                elif isinstance(categories, str):
+                    collection_name = categories
+
             # Extract option names from product options
             option1_name = None
             option2_name = None
@@ -94,9 +105,9 @@ class DatabaseService:
                 title=product_data.get('title', 'Untitled'),
                 handle=product_data.get('handle', ''),
                 body_html=product_data.get('body_html', ''),
-                product_type=product_data.get('product_type', ''),
+                product_type=collection_name,  # Use extracted collection name
                 tags=tags_data,
-                vendor=product_data.get('vendor', ''),
+                vendor=product_data.get('vendor', product_data.get('brand', '')),  # Try vendor, fallback to brand
                 option1_name=option1_name,
                 option2_name=option2_name,
                 option3_name=option3_name,
