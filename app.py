@@ -744,14 +744,22 @@ def create_ai_dupes():
                 if source_product.scrape_job:
                     source_url = source_product.scrape_job.source_url
 
-                # ONLY use source URL as the single tag (ignore AI-generated tags)
+                # Add TWO tags: 1) Source website name, 2) Collection name (product_type)
                 tags_list = []
 
-                # Add ONLY source URL as the single tag if provided
+                # Tag 1: Source website name
                 if source_url:
                     readable_tag = url_to_readable_tag(source_url)
                     if readable_tag:
                         tags_list.append(readable_tag)
+
+                # Tag 2: Collection name (product_type from scraper)
+                if source_product.product_type and source_product.product_type.strip():
+                    collection_tag = source_product.product_type.strip()
+                    # Clean up collection tag (capitalize properly)
+                    collection_tag = ' '.join(word.capitalize() for word in collection_tag.split())
+                    if collection_tag and collection_tag not in tags_list:
+                        tags_list.append(collection_tag)
 
                 combined_tags = ', '.join(tags_list) if tags_list else ''
 
@@ -1460,15 +1468,22 @@ def process_single_product(source_product, ai_job_id, fast_mode, created_counter
             image_prompt = f"Nano Banana edited variations of {source_product.title}"
 
             # STEP 3: Create AI product in database
-            # Get existing tags and add source URL if provided
-            existing_tags = enhanced_product.get('tags', source_product.tags) or ''
-            tags_list = [tag.strip() for tag in existing_tags.split(',') if tag.strip()]
+            # Add TWO tags: 1) Source website name, 2) Collection name (product_type)
+            tags_list = []
 
-            # Add source URL as a readable tag if provided
+            # Tag 1: Source website name
             if source_url:
                 readable_tag = url_to_readable_tag(source_url)
-                if readable_tag and readable_tag not in tags_list:
+                if readable_tag:
                     tags_list.append(readable_tag)
+
+            # Tag 2: Collection name (product_type from scraper)
+            if source_product.product_type and source_product.product_type.strip():
+                collection_tag = source_product.product_type.strip()
+                # Clean up collection tag (capitalize properly)
+                collection_tag = ' '.join(word.capitalize() for word in collection_tag.split())
+                if collection_tag and collection_tag not in tags_list:
+                    tags_list.append(collection_tag)
 
             combined_tags = ', '.join(tags_list)
 
