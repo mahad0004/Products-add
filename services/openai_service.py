@@ -311,6 +311,19 @@ NO explanations, NO comments, ONLY JSON."""
             ai_data = self._parse_json_response(content)
 
             if ai_data:
+                # CRITICAL SANITIZATION: Remove ANY images, links, contact info that slipped through
+                if 'body_html' in ai_data:
+                    original_html = ai_data['body_html']
+                    sanitized_html = self._sanitize_html(original_html)
+                    if sanitized_html != original_html:
+                        logger.warning("⚠️ OpenAI: Found and removed prohibited content from body_html")
+                    ai_data['body_html'] = sanitized_html
+
+                # Also sanitize title and other fields
+                for field in ['title', 'short_title', 'seo_title', 'seo_description', 'meta_description']:
+                    if field in ai_data and ai_data[field]:
+                        ai_data[field] = self._sanitize_html(ai_data[field])
+
                 # CRITICAL: Validate and fix title length
                 generated_title = ai_data.get('title', '')
 
@@ -365,6 +378,53 @@ NO explanations, NO comments, ONLY JSON."""
             logger.error(f"   Traceback: {traceback.format_exc()}")
             logger.error("   Returning original product unchanged")
             return product
+
+    def _sanitize_html(self, html_content):
+        """
+        CRITICAL: Remove ALL images, links, and contact info from HTML
+        This is a failsafe to ensure nothing slips through OpenAI
+        """
+        if not html_content:
+            return html_content
+
+        import re
+
+        # Remove ALL image tags
+        html_content = re.sub(r'<img[^>]*>', '', html_content, flags=re.IGNORECASE)
+        html_content = re.sub(r'<picture[^>]*>.*?</picture>', '', html_content, flags=re.IGNORECASE | re.DOTALL)
+
+        # Remove ALL links (but keep the text)
+        html_content = re.sub(r'<a[^>]*>(.*?)</a>', r'\1', html_content, flags=re.IGNORECASE | re.DOTALL)
+
+        # Remove data URIs and base64 images
+        html_content = re.sub(r'data:image/[^;]+;base64,[A-Za-z0-9+/=]+', '', html_content, flags=re.IGNORECASE)
+
+        # Remove email addresses
+        html_content = re.sub(r'\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,}\b', '[REMOVED]', html_content)
+
+        # Remove phone numbers (various formats)
+        html_content = re.sub(r'\b(\+?\d{1,3}[-.\s]?)?\(?\d{3}\)?[-.\s]?\d{3}[-.\s]?\d{4}\b', '[REMOVED]', html_content)
+        html_content = re.sub(r'\b0\d{4}\s?\d{6}\b', '[REMOVED]', html_content)  # UK format
+
+        # Remove URLs
+        html_content = re.sub(r'https?://[^\s<>"]+', '[REMOVED]', html_content, flags=re.IGNORECASE)
+        html_content = re.sub(r'www\.[^\s<>"]+', '[REMOVED]', html_content, flags=re.IGNORECASE)
+
+        # Remove common contact phrases
+        contact_patterns = [
+            r'call\s+us\s+(at|on)',
+            r'email\s+us\s+(at)?',
+            r'contact\s+us\s+(at|on)',
+            r'reach\s+us\s+(at|on)',
+            r'phone\s*:',
+            r'tel\s*:',
+            r'email\s*:',
+            r'fax\s*:',
+        ]
+        for pattern in contact_patterns:
+            html_content = re.sub(pattern, '', html_content, flags=re.IGNORECASE)
+
+        return html_content
 
     def _parse_json_response(self, content):
         """
