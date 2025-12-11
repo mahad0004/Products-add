@@ -756,10 +756,17 @@ def create_ai_dupes():
                 # Tag 2: Collection name (product_type from scraper)
                 if source_product.product_type and source_product.product_type.strip():
                     collection_tag = source_product.product_type.strip()
-                    # Clean up collection tag (capitalize properly)
-                    collection_tag = ' '.join(word.capitalize() for word in collection_tag.split())
-                    if collection_tag and collection_tag not in tags_list:
-                        tags_list.append(collection_tag)
+
+                    # Skip if collection name is too generic or empty
+                    skip_generic = ['product', 'products', 'item', 'items', 'default']
+                    if collection_tag.lower() in skip_generic:
+                        logger.info(f"Skipping generic collection tag: '{collection_tag}'")
+                    else:
+                        # Clean up collection tag (capitalize properly)
+                        collection_tag = ' '.join(word.capitalize() for word in collection_tag.split())
+                        if collection_tag and collection_tag not in tags_list:
+                            tags_list.append(collection_tag)
+                            logger.info(f"Added collection tag: '{collection_tag}'")
 
                 combined_tags = ', '.join(tags_list) if tags_list else ''
 
@@ -1480,10 +1487,17 @@ def process_single_product(source_product, ai_job_id, fast_mode, created_counter
             # Tag 2: Collection name (product_type from scraper)
             if source_product.product_type and source_product.product_type.strip():
                 collection_tag = source_product.product_type.strip()
-                # Clean up collection tag (capitalize properly)
-                collection_tag = ' '.join(word.capitalize() for word in collection_tag.split())
-                if collection_tag and collection_tag not in tags_list:
-                    tags_list.append(collection_tag)
+
+                # Skip if collection name is too generic or empty
+                skip_generic = ['product', 'products', 'item', 'items', 'default']
+                if collection_tag.lower() in skip_generic:
+                    logger.info(f"[AI Job {ai_job_id}] Skipping generic collection tag: '{collection_tag}'")
+                else:
+                    # Clean up collection tag (capitalize properly)
+                    collection_tag = ' '.join(word.capitalize() for word in collection_tag.split())
+                    if collection_tag and collection_tag not in tags_list:
+                        tags_list.append(collection_tag)
+                        logger.info(f"[AI Job {ai_job_id}] Added collection tag: '{collection_tag}'")
 
             combined_tags = ', '.join(tags_list)
 
