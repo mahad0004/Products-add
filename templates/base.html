@@ -1,10 +1,60 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{% block title %}Shopify Automation 2{% endblock %}</title>
     <style>
+        .floating-buttons {
+            position: fixed;
+            bottom: 30px;
+            right: 30px;
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+            z-index: 999;
+        }
+
+        .floating-btn {
+            padding: 12px 24px;
+            border: none;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.4);
+        }
+
+        .floating-btn-primary {
+            background: linear-gradient(135deg, #ff00ff 0%, #00ffff 100%);
+            color: #0a0a0a;
+            border: 2px solid transparent;
+        }
+
+        .floating-btn-primary:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 6px 20px rgba(255, 0, 255, 0.6);
+        }
+
+        .floating-btn-secondary {
+            background: linear-gradient(135deg, #00ffff 0%, #0088ff 100%);
+            color: #0a0a0a;
+            border: 2px solid transparent;
+        }
+
+        .floating-btn-secondary:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 6px 20px rgba(0, 255, 255, 0.6);
+        }
+
+
         * {
             margin: 0;
             padding: 0;
@@ -53,7 +103,8 @@
             transition: all 0.3s;
         }
 
-        .navbar-menu a:hover, .navbar-menu a.active {
+        .navbar-menu a:hover,
+        .navbar-menu a.active {
             background: rgba(0, 255, 255, 0.1);
             box-shadow: 0 0 10px rgba(0, 255, 255, 0.3);
         }
@@ -136,8 +187,13 @@
         }
 
         @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
+            0% {
+                transform: rotate(0deg);
+            }
+
+            100% {
+                transform: rotate(360deg);
+            }
         }
 
         .alert {
@@ -170,7 +226,8 @@
             margin-top: 20px;
         }
 
-        th, td {
+        th,
+        td {
             padding: 12px;
             text-align: left;
             border-bottom: 1px solid rgba(0, 255, 255, 0.2);
@@ -236,7 +293,10 @@
             color: #ff0000;
         }
 
-        input[type="text"], input[type="number"], textarea, select {
+        input[type="text"],
+        input[type="number"],
+        textarea,
+        select {
             width: 100%;
             padding: 12px;
             background: rgba(0, 0, 0, 0.5);
@@ -247,7 +307,9 @@
             margin-bottom: 15px;
         }
 
-        input:focus, textarea:focus, select:focus {
+        input:focus,
+        textarea:focus,
+        select:focus {
             outline: none;
             border-color: #ff00ff;
             box-shadow: 0 0 10px rgba(255, 0, 255, 0.3);
@@ -266,6 +328,7 @@
     </style>
     {% block extra_css %}{% endblock %}
 </head>
+
 <body>
     <nav class="navbar">
         <a href="/" class="navbar-brand">🚀 Shopify Automation</a>
@@ -274,14 +337,25 @@
                 <li><a href="/" class="{% if request.path == '/' %}active{% endif %}">Dashboard</a></li>
                 <li><a href="/scrape" class="{% if request.path == '/scrape' %}active{% endif %}">Scrape</a></li>
                 <li><a href="/products" class="{% if request.path == '/products' %}active{% endif %}">Products</a></li>
-                <li><a href="/ai-products" class="{% if request.path == '/ai-products' %}active{% endif %}">AI Products</a></li>
+                <li><a href="/ai-products" class="{% if request.path == '/ai-products' %}active{% endif %}">AI
+                        Products</a></li>
             </ul>
-            <button onclick="logout()" class="btn btn-danger" style="padding: 8px 16px; font-size: 13px;">Logout</button>
+            <button onclick="logout()" class="btn btn-danger"
+                style="padding: 8px 16px; font-size: 13px;">Logout</button>
         </div>
     </nav>
 
     <div class="container">
         {% block content %}{% endblock %}
+    </div>
+
+    <div class="floating-buttons">
+        <a href="https://web-production-eb236.up.railway.app/login" class="floating-btn floating-btn-primary">
+            <span>Shopify Automation 1</span>
+        </a>
+        <a href="https://web-production-a9b8f.up.railway.app/login" class="floating-btn floating-btn-secondary">
+            <span>Shopify Automation 3</span>
+        </a>
     </div>
 
     <script>
@@ -316,4 +390,5 @@
     </script>
     {% block extra_js %}{% endblock %}
 </body>
+
 </html>
