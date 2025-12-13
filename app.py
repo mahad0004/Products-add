@@ -1880,16 +1880,42 @@ def process_ai_job_async(ai_job_id, fast_mode=False, product_limit=None, product
                 db.session.commit()
 
             else:
-                # No quota exhaustion - normal completion
-                ai_job.ai_products_created = created_counter.get()
-                ai_job.products_pushed = pushed_counter.get()
-                ai_job.status = 'completed'
-                ai_job.push_status = 'completed'
+                # No quota exhaustion - check if all products were processed
+                total_created = created_counter.get()
+                total_pushed = pushed_counter.get()
+                total_products = len(products)
+
+                ai_job.ai_products_created = total_created
+                ai_job.products_pushed = total_pushed
+
+                # Calculate success rate
+                success_rate = (total_created / total_products * 100) if total_products > 0 else 0
+
+                # Determine status based on success rate
+                if total_created == total_products:
+                    # 100% success
+                    ai_job.status = 'completed'
+                    ai_job.push_status = 'completed'
+                    ai_job.error_message = None
+                    logger.info(f"[AI Job {ai_job_id}] ✅ Completed! Created {total_created}/{total_products} AI products and pushed {total_pushed}/{total_products} to Shopify")
+                elif total_created >= total_products * 0.9:
+                    # 90%+ success - mark as completed with warning
+                    ai_job.status = 'completed'
+                    ai_job.push_status = 'completed'
+                    failed_count = total_products - total_created
+                    ai_job.error_message = f"Completed with {failed_count} failed products ({success_rate:.1f}% success rate)"
+                    logger.warning(f"[AI Job {ai_job_id}] ⚠️ Completed with warnings! Created {total_created}/{total_products} ({success_rate:.1f}%), {failed_count} products failed")
+                else:
+                    # Less than 90% success - mark as partial/error
+                    ai_job.status = 'partial'
+                    ai_job.push_status = 'partial'
+                    failed_count = total_products - total_created
+                    ai_job.error_message = f"Partial completion: {failed_count} products failed ({success_rate:.1f}% success rate). Check logs for details."
+                    logger.error(f"[AI Job {ai_job_id}] ⚠️ Partial completion! Created {total_created}/{total_products} ({success_rate:.1f}%), {failed_count} products failed")
+
                 ai_job.completed_at = datetime.utcnow()
                 ai_job.push_completed_at = datetime.utcnow()
                 db.session.commit()
-
-                logger.info(f"[AI Job {ai_job_id}] ✅ Completed! Created {created_counter.get()}/{len(products)} AI products and pushed {pushed_counter.get()}/{len(products)} to Shopify")
 
         except Exception as e:
             logger.error(f"[AI Job {ai_job_id}] Error: {str(e)}", exc_info=True)
