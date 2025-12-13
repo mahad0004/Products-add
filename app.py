@@ -1425,11 +1425,16 @@ def process_single_product(source_product, ai_job_id, fast_mode, created_counter
                     logger.error(f"[AI Job {ai_job_id}] ❌ {error_msg}")
                     raise  # Re-raise to be caught by process_ai_job_async
 
-            # CRITICAL: If Gemini fails after all retries, STOP - do NOT create product
+            # CRITICAL: If Gemini fails after all retries, check if it's due to quota exhaustion
             if not edited_url_1:
-                error_msg = "Gemini image editing failed (image 1/2) after retries - SKIPPING product"
-                logger.error(f"[AI Job {ai_job_id}] ❌ {error_msg}")
-                return (False, error_msg)
+                # If all keys are exhausted, raise exception to trigger wait-and-retry logic
+                if gemini_service.are_all_keys_exhausted():
+                    raise GeminiQuotaExhaustedError("All Gemini API keys exhausted (image 1/2)")
+                else:
+                    # Genuine failure (not quota) - skip product
+                    error_msg = "Gemini image editing failed (image 1/2) after retries - SKIPPING product"
+                    logger.error(f"[AI Job {ai_job_id}] ❌ {error_msg}")
+                    return (False, error_msg)
 
             ai_image_urls.append(edited_url_1)
             logger.info(f"[AI Job {ai_job_id}] ✅ Nano Banana: Image 1/2 edited successfully (Product in use)")
@@ -1463,11 +1468,16 @@ def process_single_product(source_product, ai_job_id, fast_mode, created_counter
                     logger.error(f"[AI Job {ai_job_id}] ❌ {error_msg}")
                     raise  # Re-raise to be caught by process_ai_job_async
 
-            # CRITICAL: If Gemini fails after all retries, STOP - do NOT create product
+            # CRITICAL: If Gemini fails after all retries, check if it's due to quota exhaustion
             if not edited_url_2:
-                error_msg = "Gemini image editing failed (image 2/2) after retries - SKIPPING product"
-                logger.error(f"[AI Job {ai_job_id}] ❌ {error_msg}")
-                return (False, error_msg)
+                # If all keys are exhausted, raise exception to trigger wait-and-retry logic
+                if gemini_service.are_all_keys_exhausted():
+                    raise GeminiQuotaExhaustedError("All Gemini API keys exhausted (image 2/2)")
+                else:
+                    # Genuine failure (not quota) - skip product
+                    error_msg = "Gemini image editing failed (image 2/2) after retries - SKIPPING product"
+                    logger.error(f"[AI Job {ai_job_id}] ❌ {error_msg}")
+                    return (False, error_msg)
 
             ai_image_urls.append(edited_url_2)
             logger.info(f"[AI Job {ai_job_id}] ✅ Nano Banana: Image 2/2 edited successfully (Installation scene)")
